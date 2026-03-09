@@ -1,7 +1,17 @@
+'use client';
+
+import { AppShell } from '@/components/layout/AppShell';
+import { MessageSquare } from 'lucide-react';
+import { EmptyState } from '@/components/shared/EmptyState';
+
 export default function HomePage() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-2xl font-bold">Cortex Hub</h1>
-    </div>
+    <AppShell title="Chat">
+      <EmptyState
+        icon={MessageSquare}
+        title="Start a conversation"
+        description="Type a message to begin chatting with Cortex"
+      />
+    </AppShell>
   );
 }
