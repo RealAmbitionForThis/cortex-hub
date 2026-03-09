@@ -18,14 +18,18 @@ export function useExports() {
   useEffect(() => { fetchExports(); }, [fetchExports]);
 
   async function exportData(mod, format = 'xlsx') {
-    const res = await fetch('/api/exports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ module: mod, format }),
-    });
-    const data = await res.json();
-    fetchExports();
-    return data;
+    try {
+      const res = await fetch('/api/exports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: mod, format }),
+      });
+      const data = await res.json();
+      fetchExports();
+      return data;
+    } catch {
+      return { error: 'Export failed' };
+    }
   }
 
   return { exports, loading, exportData, refresh: fetchExports };

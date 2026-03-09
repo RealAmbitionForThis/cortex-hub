@@ -18,27 +18,35 @@ export function useMcp() {
   useEffect(() => { fetchServers(); }, [fetchServers]);
 
   async function addServer(data) {
-    const res = await fetch('/api/mcp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    fetchServers();
-    return res.json();
+    try {
+      const res = await fetch('/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      fetchServers();
+      return await res.json();
+    } catch {
+      return { error: 'Failed to add server' };
+    }
   }
 
   async function updateServer(id, updates) {
-    await fetch('/api/mcp', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ...updates }),
-    });
-    fetchServers();
+    try {
+      await fetch('/api/mcp', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      });
+      fetchServers();
+    } catch {}
   }
 
   async function deleteServer(id) {
-    await fetch(`/api/mcp?id=${id}`, { method: 'DELETE' });
-    fetchServers();
+    try {
+      await fetch(`/api/mcp?id=${id}`, { method: 'DELETE' });
+      fetchServers();
+    } catch {}
   }
 
   return { servers, loading, addServer, updateServer, deleteServer, refresh: fetchServers };

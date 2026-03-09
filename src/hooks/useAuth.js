@@ -7,7 +7,11 @@ export function useAuth() {
   const router = useRouter();
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Continue to login even if request fails
+    }
     router.push('/login');
     router.refresh();
   }, [router]);

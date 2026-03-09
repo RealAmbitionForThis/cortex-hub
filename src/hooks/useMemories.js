@@ -30,23 +30,31 @@ export function useMemories(type, module) {
   }, [fetchMemories]);
 
   const addMemory = useCallback(async (memory) => {
-    const res = await fetch('/api/memories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(memory),
-    });
-    if (res.ok) fetchMemories();
-    return res.ok;
+    try {
+      const res = await fetch('/api/memories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memory),
+      });
+      if (res.ok) fetchMemories();
+      return res.ok;
+    } catch {
+      return false;
+    }
   }, [fetchMemories]);
 
   const deleteMemory = useCallback(async (id) => {
-    const res = await fetch('/api/memories', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (res.ok) fetchMemories();
-    return res.ok;
+    try {
+      const res = await fetch('/api/memories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) fetchMemories();
+      return res.ok;
+    } catch {
+      return false;
+    }
   }, [fetchMemories]);
 
   return { memories, loading, refresh: fetchMemories, addMemory, deleteMemory };

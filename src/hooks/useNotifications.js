@@ -26,21 +26,25 @@ export function useNotifications() {
   }, [fetchNotifications]);
 
   async function markRead(id) {
-    await fetch('/api/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'mark_read', id }),
-    });
-    fetchNotifications();
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_read', id }),
+      });
+      fetchNotifications();
+    } catch {}
   }
 
   async function markAllRead() {
-    await fetch('/api/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'mark_read' }),
-    });
-    fetchNotifications();
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_read' }),
+      });
+      fetchNotifications();
+    } catch {}
   }
 
   return { notifications, unread, loading, markRead, markAllRead, refresh: fetchNotifications };

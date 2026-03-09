@@ -103,43 +103,54 @@ export function useChat() {
   }, [conversationId]);
 
   const editMessage = useCallback(async (messageId, newContent) => {
-    const res = await fetch('/api/chat', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId, newContent }),
-    });
-    if (res.ok && conversationId) {
-      await loadConversation(conversationId);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, newContent }),
+      });
+      if (res.ok && conversationId) {
+        await loadConversation(conversationId);
+      }
+    } catch {
+      // Network error
     }
   }, [conversationId, loadConversation]);
 
   const deleteMessage = useCallback(async (messageId) => {
-    const res = await fetch('/api/chat', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId }),
-    });
-    if (res.ok && conversationId) {
-      await loadConversation(conversationId);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId }),
+      });
+      if (res.ok && conversationId) {
+        await loadConversation(conversationId);
+      }
+    } catch {
+      // Network error
     }
   }, [conversationId, loadConversation]);
 
   const regenerate = useCallback(async (messageId, reasoningLevel) => {
-    const res = await fetch('/api/chat/regenerate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId, reasoningLevel }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.conversationId) {
-        await loadConversation(data.conversationId);
-        // Get last user message and resend
-        const lastUser = messages.filter((m) => m.role === 'user').pop();
-        if (lastUser) {
-          await sendMessage({ message: lastUser.content, reasoningLevel: data.reasoningLevel });
+    try {
+      const res = await fetch('/api/chat/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, reasoningLevel }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.conversationId) {
+          await loadConversation(data.conversationId);
+          const lastUser = messages.filter((m) => m.role === 'user').pop();
+          if (lastUser) {
+            await sendMessage({ message: lastUser.content, reasoningLevel: data.reasoningLevel });
+          }
         }
       }
+    } catch {
+      // Network error
     }
   }, [messages, loadConversation, sendMessage]);
 

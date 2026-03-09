@@ -18,30 +18,36 @@ export function useSchedules() {
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
   async function addSchedule(data) {
-    await fetch('/api/schedules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    fetchSchedules();
+    try {
+      await fetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      fetchSchedules();
+    } catch {}
   }
 
   async function toggleSchedule(id, enabled) {
-    await fetch('/api/schedules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'toggle', id, enabled }),
-    });
-    fetchSchedules();
+    try {
+      await fetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle', id, enabled }),
+      });
+      fetchSchedules();
+    } catch {}
   }
 
   async function deleteSchedule(id) {
-    await fetch('/api/schedules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', id }),
-    });
-    fetchSchedules();
+    try {
+      await fetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id }),
+      });
+      fetchSchedules();
+    } catch {}
   }
 
   return { schedules, loading, addSchedule, toggleSchedule, deleteSchedule, refresh: fetchSchedules };

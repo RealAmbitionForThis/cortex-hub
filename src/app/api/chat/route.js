@@ -82,43 +82,47 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
 }
 
 async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel }) {
-  const toolResults = [];
+  try {
+    const toolResults = [];
 
-  for (const tc of toolCalls) {
-    const name = tc.function?.name;
-    const args = tc.function?.arguments || {};
-    send({ type: 'tool_call', name, arguments: args });
+    for (const tc of toolCalls) {
+      const name = tc.function?.name;
+      const args = tc.function?.arguments || {};
+      send({ type: 'tool_call', name, arguments: args });
 
-    const result = await executeTool(name, args);
-    send({ type: 'tool_result', name, result });
-    toolResults.push({ role: 'tool', content: JSON.stringify(result) });
-  }
-
-  if (fullContent) {
-    saveAssistantMessage(db, convId, fullContent, JSON.stringify(toolCalls), reasoningLevel);
-  }
-
-  const updatedMessages = [
-    ...messages,
-    { role: 'assistant', content: fullContent, tool_calls: toolCalls },
-    ...toolResults,
-  ];
-
-  const res = await chatCompletion({ model: mainModel, messages: updatedMessages, stream: true });
-  let finalContent = '';
-
-  for await (const chunk of parseOllamaStream(res)) {
-    if (chunk.message?.content) {
-      finalContent += chunk.message.content;
-      send({ type: 'content', content: chunk.message.content, conversationId: convId });
+      const result = await executeTool(name, args);
+      send({ type: 'tool_result', name, result });
+      toolResults.push({ role: 'tool', content: JSON.stringify(result) });
     }
-    if (chunk.done) break;
-  }
 
-  saveAssistantMessage(db, convId, finalContent, null, reasoningLevel);
-  updateConversationTitle(db, convId, finalContent);
-  send({ type: 'done', conversationId: convId });
-  close();
+    if (fullContent) {
+      saveAssistantMessage(db, convId, fullContent, JSON.stringify(toolCalls), reasoningLevel);
+    }
+
+    const updatedMessages = [
+      ...messages,
+      { role: 'assistant', content: fullContent, tool_calls: toolCalls },
+      ...toolResults,
+    ];
+
+    const res = await chatCompletion({ model: mainModel, messages: updatedMessages, stream: true });
+    let finalContent = '';
+
+    for await (const chunk of parseOllamaStream(res)) {
+      if (chunk.message?.content) {
+        finalContent += chunk.message.content;
+        send({ type: 'content', content: chunk.message.content, conversationId: convId });
+      }
+      if (chunk.done) break;
+    }
+
+    saveAssistantMessage(db, convId, finalContent, null, reasoningLevel);
+    updateConversationTitle(db, convId, finalContent);
+    send({ type: 'done', conversationId: convId });
+    close();
+  } catch (err) {
+    streamError(err);
+  }
 }
 
 function createConversation(db, model) {
