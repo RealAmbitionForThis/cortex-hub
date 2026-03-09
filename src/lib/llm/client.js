@@ -50,13 +50,18 @@ export async function checkConnection() {
   }
 }
 
-export async function generateCompletion({ model, prompt, stream = false }) {
+export async function generateCompletion({ model, prompt, stream = false, images }) {
+  const body = { model: model || process.env.OLLAMA_MODEL || 'llama3', prompt, stream };
+  if (images) body.images = images;
+
   const res = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, prompt, stream }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error(`Generate error: ${res.status}`);
-  return res;
+  if (stream) return res;
+  const data = await res.json();
+  return data.response;
 }
