@@ -1,17 +1,41 @@
 'use client';
 
+import { Suspense, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
-import { MessageSquare } from 'lucide-react';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { ChatWindow } from '@/components/chat/ChatWindow';
+import { useChat } from '@/hooks/useChat';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+
+function ChatPage() {
+  const searchParams = useSearchParams();
+  const conversationId = searchParams.get('c');
+  const chat = useChat();
+
+  useEffect(() => {
+    if (conversationId) {
+      chat.loadConversation(conversationId);
+    }
+  }, [conversationId]);
+
+  return (
+    <AppShell title="Chat">
+      <ChatWindow
+        messages={chat.messages}
+        streaming={chat.streaming}
+        onSend={chat.sendMessage}
+        onEdit={chat.editMessage}
+        onDelete={chat.deleteMessage}
+        onRegenerate={chat.regenerate}
+      />
+    </AppShell>
+  );
+}
 
 export default function HomePage() {
   return (
-    <AppShell title="Chat">
-      <EmptyState
-        icon={MessageSquare}
-        title="Start a conversation"
-        description="Type a message to begin chatting with Cortex"
-      />
-    </AppShell>
+    <Suspense fallback={<LoadingSpinner />}>
+      <ChatPage />
+    </Suspense>
   );
 }
