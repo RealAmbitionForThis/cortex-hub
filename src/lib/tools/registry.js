@@ -6,6 +6,8 @@ import { healthTools } from './health/index';
 import { vehicleTools } from './vehicle/index';
 import { contactTools } from './contacts/index';
 import { docTools } from './docs/index';
+import { notifyTools } from './notify/index';
+import { searchTools } from './search/index';
 
 const toolRegistry = new Map();
 
@@ -58,6 +60,8 @@ export function initializeTools() {
   registerTools(vehicleTools);
   registerTools(contactTools);
   registerTools(docTools);
+  registerTools(notifyTools);
+  registerTools(searchTools);
 }
 
 // Auto-initialize
