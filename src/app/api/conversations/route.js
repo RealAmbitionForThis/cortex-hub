@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -8,9 +8,9 @@ export async function GET() {
     const conversations = db.prepare(
       'SELECT * FROM conversations ORDER BY pinned DESC, updated_at DESC LIMIT 100'
     ).all();
-    return NextResponse.json({ conversations });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ conversations });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -25,9 +25,9 @@ export async function POST(request) {
       'INSERT INTO conversations (id, title, model, cluster_id, reasoning_level, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))'
     ).run(id, body.title || 'New Chat', model, body.cluster_id || null, body.reasoning_level || 'medium');
 
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -36,8 +36,8 @@ export async function DELETE(request) {
     const db = getDb();
     const { id } = await request.json();
     db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }

@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server';
 import { verifyPassword, createToken, getPasswordHash } from '@/lib/auth';
+import { badRequest, error } from '@/lib/api/response';
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_EXPIRY_DAYS } from '@/lib/constants';
 
 export async function POST(request) {
   try {
     const { password } = await request.json();
-
-    if (!password) {
-      return NextResponse.json({ error: 'Password required' }, { status: 400 });
-    }
+    if (!password) return badRequest('Password required');
 
     const hash = await getPasswordHash();
     const valid = await verifyPassword(password, hash);
-
-    if (!valid) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-    }
+    if (!valid) return error('Invalid password', 401);
 
     const token = await createToken();
     const response = NextResponse.json({ success: true });
@@ -29,7 +24,7 @@ export async function POST(request) {
     });
 
     return response;
-  } catch (error) {
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+  } catch (err) {
+    return error('Login failed');
   }
 }

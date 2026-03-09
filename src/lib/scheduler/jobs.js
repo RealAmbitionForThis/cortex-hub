@@ -25,7 +25,7 @@ export function initializeBuiltInJobs() {
       const today = new Date().toISOString().split('T')[0];
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       const bills = db.prepare(
-        "SELECT * FROM bills WHERE next_due_date BETWEEN ? AND ? AND status = 'active'"
+        "SELECT * FROM bills WHERE next_due BETWEEN ? AND ?"
       ).all(today, tomorrow);
 
       if (bills.length > 0) {

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { textToVector, vectorToBuffer } from '@/lib/memory/embeddings';
@@ -18,9 +18,9 @@ export async function GET(request) {
     query += ' ORDER BY updated_at DESC LIMIT 200';
 
     const memories = db.prepare(query).all(...params);
-    return NextResponse.json({ memories });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ memories });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -37,9 +37,9 @@ export async function POST(request) {
       'INSERT INTO memories (id, memory_type, category, module, content, embedding, protected, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))'
     ).run(id, memory_type || 'persistent', category || 'fact', memModule || 'general', content, embedding ? vectorToBuffer(embedding) : null, isProtected ? 1 : 0);
 
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -48,8 +48,8 @@ export async function DELETE(request) {
     const db = getDb();
     const { id } = await request.json();
     db.prepare('DELETE FROM memories WHERE id = ?').run(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }

@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server';
+import { success, error, badRequest } from '@/lib/api/response';
 import { importFile } from '@/lib/export/importer';
 
 export async function POST(request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!file) return badRequest('No file provided');
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await importFile(buffer, file.name);
-    return NextResponse.json({ success: true, ...result });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success(result);
+  } catch (err) {
+    return error(err.message);
   }
 }

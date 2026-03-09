@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { getMcpServers, addMcpServer, updateMcpServer, deleteMcpServer } from '@/lib/mcp/registry';
 
 export async function GET() {
   try {
-    return NextResponse.json({ servers: getMcpServers() });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ servers: getMcpServers() });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -13,9 +13,9 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const id = addMcpServer(body);
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -24,9 +24,9 @@ export async function PUT(request) {
     const body = await request.json();
     const { id, ...updates } = body;
     updateMcpServer(id, updates);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -35,8 +35,8 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     deleteMcpServer(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }

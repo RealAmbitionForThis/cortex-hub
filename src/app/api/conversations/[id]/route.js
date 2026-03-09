@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { success, error, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
+
+const ALLOWED_FIELDS = ['title', 'pinned', 'model'];
 
 export async function GET(request, { params }) {
   try {
@@ -7,17 +9,15 @@ export async function GET(request, { params }) {
     const { id } = await params;
 
     const conversation = db.prepare('SELECT * FROM conversations WHERE id = ?').get(id);
-    if (!conversation) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
+    if (!conversation) return notFound('Conversation not found');
 
     const messages = db.prepare(
       'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC'
     ).all(id);
 
-    return NextResponse.json({ conversation, messages });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ conversation, messages });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -30,9 +30,12 @@ export async function PUT(request, { params }) {
     const sets = [];
     const values = [];
 
-    if (body.title !== undefined) { sets.push('title = ?'); values.push(body.title); }
-    if (body.pinned !== undefined) { sets.push('pinned = ?'); values.push(body.pinned); }
-    if (body.model !== undefined) { sets.push('model = ?'); values.push(body.model); }
+    for (const [key, val] of Object.entries(body)) {
+      if (ALLOWED_FIELDS.includes(key)) {
+        sets.push(`${key} = ?`);
+        values.push(val);
+      }
+    }
 
     if (sets.length > 0) {
       sets.push('updated_at = datetime(\'now\')');
@@ -40,9 +43,9 @@ export async function PUT(request, { params }) {
       db.prepare(`UPDATE conversations SET ${sets.join(', ')} WHERE id = ?`).run(...values);
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -51,8 +54,8 @@ export async function DELETE(request, { params }) {
     const db = getDb();
     const { id } = await params;
     db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }

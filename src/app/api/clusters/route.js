@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { getAllClusters, createCluster } from '@/lib/tools/cluster/queries';
 
 export async function GET() {
   try {
-    return NextResponse.json({ clusters: getAllClusters() });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ clusters: getAllClusters() });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -13,8 +13,8 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const id = createCluster(body);
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }

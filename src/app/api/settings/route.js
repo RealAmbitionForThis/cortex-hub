@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 
 export async function GET() {
@@ -10,9 +10,9 @@ export async function GET() {
       try { settings[row.key] = JSON.parse(row.value); }
       catch { settings[row.key] = row.value; }
     }
-    return NextResponse.json({ settings });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ settings });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -31,8 +31,8 @@ export async function PUT(request) {
     });
 
     transaction();
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return error(err.message);
   }
 }

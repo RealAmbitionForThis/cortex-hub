@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { success } from '@/lib/api/response';
 import { getOllamaStatus } from '@/lib/llm/models';
 
 export async function GET() {
   try {
     const status = await getOllamaStatus();
-    return NextResponse.json(status);
+    return success(status);
   } catch {
-    return NextResponse.json({ connected: false, models: [] });
+    return success({ connected: false, models: [] });
   }
 }

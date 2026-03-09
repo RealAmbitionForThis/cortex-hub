@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error, badRequest } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 
 export async function POST(request) {
@@ -8,19 +8,17 @@ export async function POST(request) {
 
     const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
     if (!msg || msg.role !== 'assistant') {
-      return NextResponse.json({ error: 'Invalid message' }, { status: 400 });
+      return badRequest('Invalid message');
     }
 
-    // Delete this assistant message and any after it
     db.prepare('DELETE FROM messages WHERE conversation_id = ? AND created_at >= ?')
       .run(msg.conversation_id, msg.created_at);
 
-    return NextResponse.json({
-      success: true,
+    return success({
       conversationId: msg.conversation_id,
       reasoningLevel: reasoningLevel || msg.reasoning_level,
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return error(err.message);
   }
 }

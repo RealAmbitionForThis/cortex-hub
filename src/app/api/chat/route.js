@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error as errorResponse, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { chatCompletion } from '@/lib/llm/client';
@@ -45,8 +45,8 @@ export async function POST(request) {
         Connection: 'keep-alive',
       },
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return errorResponse(err.message);
   }
 }
 
@@ -159,14 +159,14 @@ export async function PUT(request) {
     const { messageId, newContent } = await request.json();
 
     const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
-    if (!msg) return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    if (!msg) return notFound('Message not found');
 
     db.prepare('UPDATE messages SET original_content = content, content = ?, edited = 1, version = version + 1 WHERE id = ?').run(newContent, messageId);
     db.prepare('DELETE FROM messages WHERE conversation_id = ? AND created_at > ?').run(msg.conversation_id, msg.created_at);
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return errorResponse(err.message);
   }
 }
 
@@ -176,13 +176,13 @@ export async function DELETE(request) {
     const { messageId } = await request.json();
 
     const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
-    if (!msg) return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    if (!msg) return notFound('Message not found');
 
     db.prepare('DELETE FROM messages WHERE id = ?').run(messageId);
     db.prepare('DELETE FROM messages WHERE conversation_id = ? AND created_at > ?').run(msg.conversation_id, msg.created_at);
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success();
+  } catch (err) {
+    return errorResponse(err.message);
   }
 }

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { parseJsonSafe } from '@/lib/utils/format';
 
@@ -16,7 +16,7 @@ export async function GET(request) {
         log.highlights = parseJsonSafe(log.highlights, []);
         log.modules_touched = parseJsonSafe(log.modules_touched, []);
       }
-      return NextResponse.json({ log });
+      return success({ log });
     }
 
     let query = 'SELECT id, date, summary, mood, message_count FROM daily_logs';
@@ -29,8 +29,8 @@ export async function GET(request) {
 
     query += ' ORDER BY date DESC LIMIT 90';
     const logs = db.prepare(query).all(...params);
-    return NextResponse.json({ logs });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ logs });
+  } catch (err) {
+    return error(err.message);
   }
 }

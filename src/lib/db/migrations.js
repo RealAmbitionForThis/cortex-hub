@@ -99,16 +99,12 @@ function createModuleTables(db) {
 
     CREATE TABLE IF NOT EXISTS documents (
       id TEXT PRIMARY KEY,
-      filename TEXT NOT NULL,
-      filepath TEXT,
-      doc_type TEXT NOT NULL,
-      content_text TEXT,
-      extracted_data TEXT,
+      title TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'text',
+      content TEXT,
+      file_path TEXT,
+      metadata TEXT,
       embedding BLOB,
-      module_link TEXT,
-      module_record_id TEXT,
-      file_hash TEXT,
-      processed INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -250,22 +246,12 @@ function createSystemTables(db) {
       updated_at TEXT DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS interactions (
+    CREATE TABLE IF NOT EXISTS contact_interactions (
       id TEXT PRIMARY KEY,
       contact_id TEXT NOT NULL,
       type TEXT NOT NULL,
-      summary TEXT,
+      notes TEXT,
       date TEXT NOT NULL DEFAULT (date('now')),
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS followups (
-      id TEXT PRIMARY KEY,
-      contact_id TEXT NOT NULL,
-      reason TEXT NOT NULL,
-      due_date TEXT NOT NULL,
-      completed INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
     );
@@ -287,16 +273,10 @@ function createSystemTables(db) {
     CREATE TABLE IF NOT EXISTS schedules (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      type TEXT NOT NULL,
-      cron_expression TEXT,
-      next_run TEXT,
+      cron_expression TEXT NOT NULL,
       action TEXT NOT NULL,
-      payload TEXT,
-      module TEXT,
-      notify_via_ntfy INTEGER DEFAULT 0,
+      params TEXT,
       enabled INTEGER DEFAULT 1,
-      last_run TEXT,
-      run_count INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -304,22 +284,17 @@ function createSystemTables(db) {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       message TEXT NOT NULL,
-      priority TEXT DEFAULT 'default',
-      source_module TEXT,
-      source_record_id TEXT,
-      sent_via TEXT DEFAULT 'internal',
-      sent_at TEXT,
+      type TEXT DEFAULT 'info',
       read INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS exports (
       id TEXT PRIMARY KEY,
-      module TEXT NOT NULL,
+      filename TEXT NOT NULL,
       format TEXT NOT NULL,
-      filepath TEXT NOT NULL,
-      filters TEXT,
-      row_count INTEGER,
+      module TEXT NOT NULL,
+      row_count INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -339,11 +314,9 @@ function createSystemTables(db) {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       url TEXT NOT NULL,
-      transport TEXT NOT NULL DEFAULT 'sse',
-      auth_config TEXT,
+      description TEXT,
       enabled INTEGER DEFAULT 1,
-      status TEXT DEFAULT 'disconnected',
-      last_connected TEXT,
+      config TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
