@@ -55,10 +55,10 @@ export function Sidebar({ conversations = [], onNewChat, onSelectConversation, a
 function SidebarHeader({ onNewChat }) {
   return (
     <div className="p-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
+      <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
         <Brain className="h-6 w-6 text-primary" />
         <span className="font-semibold text-lg">Cortex</span>
-      </div>
+      </Link>
       <Button size="icon" variant="ghost" onClick={onNewChat}>
         <Plus className="h-4 w-4" />
       </Button>

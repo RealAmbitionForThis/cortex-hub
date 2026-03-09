@@ -34,9 +34,11 @@ export function MobileSidebar({ open, onOpenChange, conversations = [], onNewCha
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-72 p-0">
         <SheetHeader className="p-4">
-          <SheetTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            Cortex
+          <SheetTitle>
+            <Link href="/" onClick={() => onOpenChange(false)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Brain className="h-6 w-6 text-primary" />
+              Cortex
+            </Link>
           </SheetTitle>
         </SheetHeader>
         <div className="px-2">
