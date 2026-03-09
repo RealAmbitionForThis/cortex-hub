@@ -6,6 +6,7 @@ const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout'];
 
 function isPublicPath(pathname) {
   if (pathname.startsWith('/_next')) return true;
+  if (pathname.startsWith('/comfyui-outputs')) return true;
   if (pathname === '/favicon.ico') return true;
   return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 }
@@ -32,6 +33,9 @@ export async function middleware(request) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
   if (!token || !(await isValidToken(token))) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }

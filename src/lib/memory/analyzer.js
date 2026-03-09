@@ -23,6 +23,16 @@ Extract the following as JSON:
 Only extract genuinely useful information. Skip greetings, filler, and generic statements.
 Return ONLY valid JSON, nothing else.`;
 
+export async function analyzeRecentConversations() {
+  const db = getDb();
+  const lastHour = new Date(Date.now() - 3600000).toISOString();
+  const messages = db.prepare(
+    'SELECT m.id, m.role, m.content FROM messages m WHERE m.created_at >= ? ORDER BY m.created_at'
+  ).all(lastHour);
+  if (messages.length < 2) return;
+  await analyzeMessages(messages);
+}
+
 export async function analyzeMessages(messages, model) {
   if (!messages.length) return;
 

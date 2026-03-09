@@ -52,7 +52,10 @@ function buildClusterSection(clusters, clusterMemories) {
 }
 
 function buildToolSection(tools) {
-  const defs = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n');
+  const defs = tools.map((t) => {
+    const fn = t.function || t;
+    return `- ${fn.name}: ${fn.description}`;
+  }).join('\n');
   return `## Available Tools\n${defs}`;
 }
 

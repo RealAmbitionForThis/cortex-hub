@@ -25,7 +25,7 @@ export async function sendNotification({ title, message, priority = 3, tags = []
 export async function sendBillReminder(bill) {
   return sendNotification({
     title: `Bill Due: ${bill.name}`,
-    message: `$${bill.amount} due on ${bill.due_date}`,
+    message: `$${bill.amount} due on ${bill.next_due}`,
     priority: 4,
     tags: ['money_with_wings'],
   });
