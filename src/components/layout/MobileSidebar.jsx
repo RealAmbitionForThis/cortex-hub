@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Brain, Plus, DollarSign, Heart, Car, Users, CheckSquare,
-  FileText, Database, Settings, Pin,
+  FileText, Database, Settings, Pin, Download,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { href: '/contacts', icon: Users, label: 'Contacts' },
   { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { href: '/documents', icon: FileText, label: 'Documents' },
+  { href: '/exports', icon: Download, label: 'Exports' },
   { href: '/memories', icon: Database, label: 'Memories' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];

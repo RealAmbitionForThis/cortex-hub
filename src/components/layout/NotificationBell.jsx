@@ -14,7 +14,11 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-  }, [open]);
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => { if (open) fetchNotifications(); }, [open]);
 
   async function fetchNotifications() {
     try {
@@ -23,9 +27,18 @@ export function NotificationBell() {
         const data = await res.json();
         setNotifications(data.notifications || []);
       }
-    } catch {
-      // Notifications endpoint may not exist yet
-    }
+    } catch {}
+  }
+
+  async function markAllRead() {
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_read' }),
+      });
+      fetchNotifications();
+    } catch {}
   }
 
   return (
@@ -41,8 +54,13 @@ export function NotificationBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-3 border-b">
+        <div className="p-3 border-b flex items-center justify-between">
           <h4 className="font-medium text-sm">Notifications</h4>
+          {unreadCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={markAllRead}>
+              Mark all read
+            </Button>
+          )}
         </div>
         <ScrollArea className="h-64">
           {notifications.length === 0 ? (
