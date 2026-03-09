@@ -226,6 +226,34 @@ function createModuleTables(db) {
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS comfyui_workflows (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      workflow_json TEXT NOT NULL,
+      parameters TEXT,
+      thumbnail_path TEXT,
+      tags TEXT,
+      use_count INTEGER DEFAULT 0,
+      last_used TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS comfyui_generations (
+      id TEXT PRIMARY KEY,
+      workflow_id TEXT NOT NULL,
+      prompt_id TEXT NOT NULL,
+      input_params TEXT,
+      output_images TEXT,
+      status TEXT DEFAULT 'queued',
+      progress REAL DEFAULT 0,
+      execution_time_seconds REAL,
+      error TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (workflow_id) REFERENCES comfyui_workflows(id) ON DELETE CASCADE
+    );
   `);
 }
 

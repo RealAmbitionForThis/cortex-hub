@@ -5,14 +5,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Brain, Plus, DollarSign, Heart, Car, Users, CheckSquare,
-  FileText, Database, Settings, MessageSquare, Pin, Download,
+  FileText, Database, Settings, MessageSquare, Pin, Download, Paintbrush,
+  ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { formatRelative } from '@/lib/utils/date';
 import { truncate } from '@/lib/utils/format';
+import { SystemDashboard } from '@/components/shared/SystemDashboard';
 
 const NAV_ITEMS = [
   { href: '/money', icon: DollarSign, label: 'Money' },
@@ -21,6 +24,7 @@ const NAV_ITEMS = [
   { href: '/contacts', icon: Users, label: 'Contacts' },
   { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { href: '/documents', icon: FileText, label: 'Documents' },
+  { href: '/comfyui', icon: Paintbrush, label: 'ComfyUI' },
   { href: '/exports', icon: Download, label: 'Exports' },
   { href: '/memories', icon: Database, label: 'Memories' },
   { href: '/settings', icon: Settings, label: 'Settings' },
@@ -42,6 +46,8 @@ export function Sidebar({ conversations = [], onNewChat, onSelectConversation, a
       </ScrollArea>
       <Separator />
       <NavLinks pathname={pathname} />
+      <Separator />
+      <SystemStatusSection />
     </div>
   );
 }
@@ -90,6 +96,22 @@ function ConversationList({ conversations, activeId, onSelect }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function SystemStatusSection() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors">
+        <span className="font-medium">System Status</span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <SystemDashboard compact={true} />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
