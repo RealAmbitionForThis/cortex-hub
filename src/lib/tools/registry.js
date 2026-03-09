@@ -4,6 +4,7 @@ import { moneyTools } from './money/index';
 import { taskTools } from './tasks/index';
 import { healthTools } from './health/index';
 import { vehicleTools } from './vehicle/index';
+import { contactTools } from './contacts/index';
 
 const toolRegistry = new Map();
 
@@ -54,6 +55,7 @@ export function initializeTools() {
   registerTools(taskTools);
   registerTools(healthTools);
   registerTools(vehicleTools);
+  registerTools(contactTools);
 }
 
 // Auto-initialize
