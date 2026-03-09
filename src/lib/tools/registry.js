@@ -1,4 +1,9 @@
 import { memoryTools } from './memory/index';
+import { clusterTools } from './cluster/index';
+import { moneyTools } from './money/index';
+import { taskTools } from './tasks/index';
+import { healthTools } from './health/index';
+import { vehicleTools } from './vehicle/index';
 
 const toolRegistry = new Map();
 
@@ -44,6 +49,11 @@ export function getAllToolNames() {
 // Initialize with built-in tools
 export function initializeTools() {
   registerTools(memoryTools);
+  registerTools(clusterTools);
+  registerTools(moneyTools);
+  registerTools(taskTools);
+  registerTools(healthTools);
+  registerTools(vehicleTools);
 }
 
 // Auto-initialize
