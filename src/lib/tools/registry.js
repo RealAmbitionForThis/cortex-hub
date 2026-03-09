@@ -9,6 +9,7 @@ import { docTools } from './docs/index';
 import { notifyTools } from './notify/index';
 import { searchTools } from './search/index';
 import { exportTools } from './export/index';
+import { scheduleTools } from './schedule/index';
 
 const toolRegistry = new Map();
 
@@ -64,6 +65,7 @@ export function initializeTools() {
   registerTools(notifyTools);
   registerTools(searchTools);
   registerTools(exportTools);
+  registerTools(scheduleTools);
 }
 
 // Auto-initialize
