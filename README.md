@@ -18,6 +18,10 @@ A self-hosted AI personal operating system. Local-first, privacy-focused, powere
 - **Excel/CSV Export** — Export any module data, import spreadsheets
 - **MCP Support** — Model Context Protocol server connections
 - **Cron Scheduling** — Automated tasks with cron expressions
+- **ComfyUI Integration** — Workflow management, image generation, parameter editing
+- **Ollama Model Manager** — Pull, delete, and monitor models with VRAM stats
+- **System Dashboard** — GPU, Ollama, and Cortex health monitoring
+- **Calculator Tools** — Math evaluation, unit conversion, tip and percentage calculations
 - **Dark Mode** — System-aware theme with manual toggle
 
 ## Requirements
@@ -53,11 +57,13 @@ Open [http://localhost:3000](http://localhost:3000) and log in with your configu
 | `CORTEX_PASSWORD` | `cortex` | Login password |
 | `CORTEX_JWT_SECRET` | `cortex-secret-change-me` | JWT signing secret |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama API URL |
-| `OLLAMA_MODEL` | `llama3` | Default chat model |
-| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | Embedding model |
-| `NTFY_URL` | `https://ntfy.sh` | ntfy server URL |
-| `NTFY_TOPIC` | `cortex-hub` | ntfy topic |
-| `DB_PATH` | `./cortex.db` | SQLite database path |
+| `CORTEX_DEFAULT_MAIN_MODEL` | `llama3` | Default chat model |
+| `CORTEX_DEFAULT_VISION_MODEL` | `llava` | Vision model for doc scanning |
+| `CORTEX_DEFAULT_EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model |
+| `CORTEX_NTFY_URL` | `https://ntfy.sh` | ntfy server URL |
+| `CORTEX_NTFY_TOPIC` | `cortex-hub` | ntfy topic |
+| `COMFYUI_URL` | `http://localhost:8188` | ComfyUI API URL (optional) |
+| `CORTEX_DB_PATH` | `./cortex.db` | SQLite database path |
 
 ## Tech Stack
 

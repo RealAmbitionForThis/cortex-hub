@@ -41,7 +41,7 @@ export function initializeBuiltInJobs() {
       const db = getDb();
       const today = new Date().toISOString().split('T')[0];
       const tasks = db.prepare(
-        "SELECT * FROM tasks WHERE due_date < ? AND status != 'completed'"
+        "SELECT * FROM tasks WHERE due_date < ? AND status != 'done'"
       ).all(today);
 
       if (tasks.length > 0) {

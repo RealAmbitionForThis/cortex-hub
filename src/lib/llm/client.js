@@ -51,7 +51,7 @@ export async function checkConnection() {
 }
 
 export async function generateCompletion({ model, prompt, stream = false, images }) {
-  const body = { model: model || process.env.OLLAMA_MODEL || 'llama3', prompt, stream };
+  const body = { model: model || process.env.CORTEX_DEFAULT_MAIN_MODEL || 'llama3', prompt, stream };
   if (images) body.images = images;
 
   const res = await fetch(`${OLLAMA_URL}/api/generate`, {

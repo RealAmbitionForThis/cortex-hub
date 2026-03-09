@@ -50,7 +50,7 @@ export async function GET() {
 
     const memoryCount = db.prepare('SELECT COUNT(*) as c FROM memories').get().c;
     const conversationCount = db.prepare('SELECT COUNT(*) as c FROM conversations').get().c;
-    const taskCountActive = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status != 'completed'").get().c;
+    const taskCountActive = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status != 'done'").get().c;
 
     const today = new Date().toISOString().split('T')[0];
     const threeDaysLater = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
@@ -66,7 +66,7 @@ export async function GET() {
     };
 
     // ntfy status
-    const ntfyTopic = process.env.NTFY_TOPIC;
+    const ntfyTopic = process.env.CORTEX_NTFY_TOPIC;
     const lastNotification = db.prepare('SELECT created_at FROM notifications ORDER BY created_at DESC LIMIT 1').get();
     const ntfy = {
       configured: !!ntfyTopic,

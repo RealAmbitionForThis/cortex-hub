@@ -13,7 +13,7 @@ export async function scanDocument(imageBase64, type = 'receipt') {
     const result = await generateCompletion({
       prompt,
       images: [imageBase64],
-      model: process.env.OLLAMA_VISION_MODEL || 'llava',
+      model: process.env.CORTEX_DEFAULT_VISION_MODEL || 'llava',
     });
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { raw: result };

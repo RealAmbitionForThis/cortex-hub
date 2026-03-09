@@ -2,6 +2,31 @@ export function runMigrations(db) {
   createCoreTables(db);
   createModuleTables(db);
   createSystemTables(db);
+  createIndexes(db);
+}
+
+function createIndexes(db) {
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+    CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(memory_type);
+    CREATE INDEX IF NOT EXISTS idx_memories_module ON memories(module);
+    CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
+    CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);
+    CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+    CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+    CREATE INDEX IF NOT EXISTS idx_bills_next_due ON bills(next_due);
+    CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(name);
+    CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(date);
+    CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(type);
+    CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+    CREATE INDEX IF NOT EXISTS idx_schedules_enabled ON schedules(enabled);
+    CREATE INDEX IF NOT EXISTS idx_doc_chunks_document ON document_chunks(document_id);
+    CREATE INDEX IF NOT EXISTS idx_cluster_memories_cluster ON cluster_memories(cluster_id);
+    CREATE INDEX IF NOT EXISTS idx_fuel_logs_vehicle ON fuel_logs(vehicle_id);
+    CREATE INDEX IF NOT EXISTS idx_maintenance_vehicle ON maintenance_logs(vehicle_id);
+    CREATE INDEX IF NOT EXISTS idx_interactions_contact ON contact_interactions(contact_id);
+  `);
 }
 
 function createCoreTables(db) {

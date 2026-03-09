@@ -1,5 +1,5 @@
-const NTFY_URL = process.env.NTFY_URL || 'https://ntfy.sh';
-const NTFY_TOPIC = process.env.NTFY_TOPIC || 'cortex-hub';
+const NTFY_URL = process.env.CORTEX_NTFY_URL || 'https://ntfy.sh';
+const NTFY_TOPIC = process.env.CORTEX_NTFY_TOPIC || 'cortex-hub';
 
 export async function sendNotification({ title, message, priority = 3, tags = [], click }) {
   try {
