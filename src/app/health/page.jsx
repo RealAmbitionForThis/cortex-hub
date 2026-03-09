@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { StatCard } from '@/components/shared/StatCard';
 import { Plus, Utensils, Dumbbell, Target, Flame } from 'lucide-react';
-import { parseJsonSafe } from '@/lib/utils/format';
 import { MEAL_TYPES, WORKOUT_TYPES } from '@/lib/constants';
 
 export default function HealthPage() {
@@ -56,7 +56,7 @@ export default function HealthPage() {
           <Button variant="outline" onClick={() => setShowWorkout(true)}><Dumbbell className="h-4 w-4 mr-2" /> Log Workout</Button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard title="Calories Today" value={stats.calories_today || 0} icon={Flame} />
           <StatCard title="Protein Today" value={`${stats.protein_today || 0}g`} icon={Target} />
           <StatCard title="Meals Today" value={stats.meals_today || 0} icon={Utensils} />
@@ -93,7 +93,7 @@ export default function HealthPage() {
             <DialogHeader><DialogTitle>Log Meal</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div><Label>Description</Label><Input value={mealForm.description} onChange={(e) => setMealForm({ ...mealForm, description: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Calories</Label><Input type="number" value={mealForm.calories} onChange={(e) => setMealForm({ ...mealForm, calories: e.target.value })} /></div>
                 <div><Label>Protein (g)</Label><Input type="number" value={mealForm.protein} onChange={(e) => setMealForm({ ...mealForm, protein: e.target.value })} /></div>
               </div>
@@ -129,11 +129,3 @@ export default function HealthPage() {
   );
 }
 
-function StatCard({ title, value, icon: Icon }) {
-  return (
-    <Card><CardContent className="p-4 flex items-center gap-3">
-      <Icon className="h-8 w-8 text-muted-foreground shrink-0" />
-      <div><p className="text-xs text-muted-foreground">{title}</p><p className="text-lg font-bold">{value}</p></div>
-    </CardContent></Card>
-  );
-}

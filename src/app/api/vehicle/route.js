@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error, badRequest } from '@/lib/api/response';
 import { addVehicle, getVehicles, logMaintenance, getMaintenanceHistory, logFuel, getFuelLogs, getVehicleCosts } from '@/lib/tools/vehicle/queries';
 
 export async function GET(request) {
@@ -7,24 +7,33 @@ export async function GET(request) {
     const vehicleId = searchParams.get('vehicle_id');
     const view = searchParams.get('view');
 
-    if (vehicleId && view === 'maintenance') return NextResponse.json({ logs: getMaintenanceHistory(vehicleId) });
-    if (vehicleId && view === 'fuel') return NextResponse.json({ logs: getFuelLogs(vehicleId) });
-    if (vehicleId && view === 'costs') return NextResponse.json(getVehicleCosts(vehicleId));
+    if (vehicleId && view === 'maintenance') return success({ logs: getMaintenanceHistory(vehicleId) });
+    if (vehicleId && view === 'fuel') return success({ logs: getFuelLogs(vehicleId) });
+    if (vehicleId && view === 'costs') return success(getVehicleCosts(vehicleId));
 
-    return NextResponse.json({ vehicles: getVehicles() });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ vehicles: getVehicles() });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    if (body.action === 'maintenance') { const id = logMaintenance(body); return NextResponse.json({ id, success: true }); }
-    if (body.action === 'fuel') { const id = logFuel(body); return NextResponse.json({ id, success: true }); }
+    if (body.action === 'maintenance') {
+      if (!body.vehicle_id) return badRequest('Vehicle ID required');
+      const id = logMaintenance(body);
+      return success({ id });
+    }
+    if (body.action === 'fuel') {
+      if (!body.vehicle_id) return badRequest('Vehicle ID required');
+      const id = logFuel(body);
+      return success({ id });
+    }
+    if (!body.name) return badRequest('Vehicle name required');
     const id = addVehicle(body);
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }

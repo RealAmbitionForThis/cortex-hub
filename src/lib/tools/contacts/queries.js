@@ -37,9 +37,11 @@ export function getContactById(id) {
 
 export function updateContact(id, updates) {
   const db = getDb();
+  const ALLOWED = ['name', 'email', 'phone', 'company', 'role', 'notes', 'birthday', 'tags'];
   const fields = [];
   const params = [];
   for (const [key, value] of Object.entries(updates)) {
+    if (!ALLOWED.includes(key)) continue;
     if (key === 'tags') {
       fields.push('tags = ?');
       params.push(JSON.stringify(value));
@@ -48,6 +50,7 @@ export function updateContact(id, updates) {
       params.push(value);
     }
   }
+  if (fields.length === 0) return;
   fields.push('updated_at = ?');
   params.push(new Date().toISOString());
   params.push(id);

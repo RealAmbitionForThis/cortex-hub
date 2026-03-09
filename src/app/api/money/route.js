@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { success, error, badRequest } from '@/lib/api/response';
 import { addTransaction, getTransactions, getBalance, getSpendingByCategory, getBudgets, setBudget } from '@/lib/tools/money/queries';
 
 export async function GET(request) {
@@ -6,14 +6,14 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view');
 
-    if (view === 'balance') return NextResponse.json(getBalance());
-    if (view === 'spending') return NextResponse.json({ spending: getSpendingByCategory() });
-    if (view === 'budgets') return NextResponse.json({ budgets: getBudgets() });
+    if (view === 'balance') return success(getBalance());
+    if (view === 'spending') return success({ spending: getSpendingByCategory() });
+    if (view === 'budgets') return success({ budgets: getBudgets() });
 
-    const transactions = getTransactions({ limit: parseInt(searchParams.get('limit') || '100') });
-    return NextResponse.json({ transactions });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '100', 10), 1), 1000);
+    return success({ transactions: getTransactions({ limit }) });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -21,12 +21,14 @@ export async function POST(request) {
   try {
     const body = await request.json();
     if (body.type === 'budget') {
+      if (!body.category) return badRequest('Category required');
       setBudget(body);
-      return NextResponse.json({ success: true });
+      return success();
     }
+    if (!body.amount) return badRequest('Amount required');
     const id = addTransaction(body);
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }

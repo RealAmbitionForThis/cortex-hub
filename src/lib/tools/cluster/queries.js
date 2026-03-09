@@ -19,9 +19,11 @@ export function createCluster({ name, description, icon, color, system_prompt_ad
 
 export function updateCluster(id, updates) {
   const db = getDb();
+  const ALLOWED = ['name', 'description', 'system_prompt_addition', 'icon', 'color'];
   const fields = [];
   const values = [];
   for (const [key, value] of Object.entries(updates)) {
+    if (!ALLOWED.includes(key)) continue;
     fields.push(`${key} = ?`);
     values.push(value);
   }

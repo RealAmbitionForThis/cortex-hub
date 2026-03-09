@@ -22,9 +22,11 @@ export function addMcpServer({ name, url, description, config }) {
 
 export function updateMcpServer(id, updates) {
   const db = getDb();
+  const ALLOWED = ['name', 'url', 'description', 'enabled', 'config'];
   const fields = [];
   const params = [];
   for (const [key, value] of Object.entries(updates)) {
+    if (!ALLOWED.includes(key)) continue;
     if (key === 'config') {
       fields.push('config = ?');
       params.push(JSON.stringify(value));
@@ -33,6 +35,7 @@ export function updateMcpServer(id, updates) {
       params.push(value);
     }
   }
+  if (fields.length === 0) return;
   params.push(id);
   db.prepare(`UPDATE mcp_servers SET ${fields.join(', ')} WHERE id = ?`).run(...params);
 }

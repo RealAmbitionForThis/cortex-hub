@@ -13,6 +13,7 @@ import { BudgetProgress } from '@/components/dashboards/BudgetProgress';
 import { BillsUpcoming } from '@/components/dashboards/BillsUpcoming';
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { StatCard } from '@/components/shared/StatCard';
 import { Plus, DollarSign, TrendingUp, TrendingDown, CreditCard } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/format';
 import { TRANSACTION_CATEGORIES } from '@/lib/constants';
@@ -87,11 +88,11 @@ export default function MoneyPage() {
           <Button variant="outline" onClick={() => setShowAddBill(true)}><Plus className="h-4 w-4 mr-2" /> Bill</Button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryCard title="Net Balance" value={formatCurrency(balance.net)} icon={DollarSign} />
-          <SummaryCard title="Income" value={formatCurrency(balance.income)} icon={TrendingUp} />
-          <SummaryCard title="Expenses" value={formatCurrency(balance.expenses)} icon={TrendingDown} />
-          <SummaryCard title="Upcoming Bills" value={formatCurrency(bills.reduce((s, b) => s + b.amount, 0))} icon={CreditCard} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard title="Net Balance" value={formatCurrency(balance.net)} icon={DollarSign} />
+          <StatCard title="Income" value={formatCurrency(balance.income)} icon={TrendingUp} />
+          <StatCard title="Expenses" value={formatCurrency(balance.expenses)} icon={TrendingDown} />
+          <StatCard title="Upcoming Bills" value={formatCurrency(bills.reduce((s, b) => s + b.amount, 0))} icon={CreditCard} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -153,16 +154,3 @@ export default function MoneyPage() {
   );
 }
 
-function SummaryCard({ title, value, icon: Icon }) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex items-center gap-3">
-        <Icon className="h-8 w-8 text-muted-foreground shrink-0" />
-        <div>
-          <p className="text-xs text-muted-foreground">{title}</p>
-          <p className="text-lg font-bold">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}

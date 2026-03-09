@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { success, error } from '@/lib/api/response';
 import { sendNotification } from '@/lib/notify/ntfy';
 import { getDb } from '@/lib/db';
+import { v4 as uuid } from 'uuid';
 
 export async function GET() {
   try {
@@ -11,9 +12,9 @@ export async function GET() {
     const unread = db.prepare(
       'SELECT COUNT(*) as count FROM notifications WHERE read = 0'
     ).get();
-    return NextResponse.json({ notifications, unread: unread.count });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ notifications, unread: unread.count });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -26,23 +27,21 @@ export async function POST(request) {
       if (body.id) {
         db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').run(body.id);
       } else {
-        db.prepare('UPDATE notifications SET read = 1').run();
+        db.prepare('UPDATE notifications SET read = 1 WHERE read = 0').run();
       }
-      return NextResponse.json({ success: true });
+      return success();
     }
 
     const result = await sendNotification(body);
 
-    // Store in DB
     const db = getDb();
-    const { v4: uuid } = await import('uuid');
     db.prepare(`
       INSERT INTO notifications (id, title, message, type, read, created_at)
       VALUES (?, ?, ?, ?, 0, ?)
     `).run(uuid(), body.title || 'Notification', body.message, body.type || 'info', new Date().toISOString());
 
-    return NextResponse.json(result);
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success(result);
+  } catch (err) {
+    return error(err.message);
   }
 }

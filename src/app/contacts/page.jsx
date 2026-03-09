@@ -111,7 +111,7 @@ export default function ContactsPage() {
                   <Button variant="outline" size="sm" onClick={() => setShowInteraction(true)}>Log Interaction</Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                     {contact.email && <div><span className="text-muted-foreground">Email:</span> {contact.email}</div>}
                     {contact.phone && <div><span className="text-muted-foreground">Phone:</span> {contact.phone}</div>}
                     {contact.birthday && <div><span className="text-muted-foreground">Birthday:</span> {contact.birthday}</div>}
@@ -139,11 +139,11 @@ export default function ContactsPage() {
           <DialogContent><DialogHeader><DialogTitle>Add Contact</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div><Label>Name</Label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Email</Label><Input value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
                 <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Company</Label><Input value={form.company} onChange={e => setForm({...form, company: e.target.value})} /></div>
                 <div><Label>Role</Label><Input value={form.role} onChange={e => setForm({...form, role: e.target.value})} /></div>
               </div>

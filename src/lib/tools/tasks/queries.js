@@ -24,10 +24,11 @@ export function completeTask(taskId) {
 }
 
 export function updateTask(taskId, updates) {
+  const ALLOWED = ['title', 'description', 'priority', 'status', 'module', 'due_date', 'tags'];
   const fields = [];
   const values = [];
   for (const [key, value] of Object.entries(updates)) {
-    if (key === 'id') continue;
+    if (!ALLOWED.includes(key)) continue;
     fields.push(`${key} = ?`);
     values.push(typeof value === 'object' ? JSON.stringify(value) : value);
   }

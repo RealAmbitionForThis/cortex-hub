@@ -1,14 +1,15 @@
-import { NextResponse } from 'next/server';
+import { success, error, badRequest } from '@/lib/api/response';
 import { addBill, getBills, getUpcomingBills, markBillPaid } from '@/lib/tools/money/queries';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const days = searchParams.get('days');
-    const bills = days ? getUpcomingBills(parseInt(days)) : getBills();
-    return NextResponse.json({ bills });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const limit = days ? Math.min(Math.max(parseInt(days, 10), 1), 365) : undefined;
+    const bills = limit ? getUpcomingBills(limit) : getBills();
+    return success({ bills });
+  } catch (err) {
+    return error(err.message);
   }
 }
 
@@ -16,12 +17,14 @@ export async function POST(request) {
   try {
     const body = await request.json();
     if (body.action === 'mark_paid') {
-      const result = markBillPaid(body.bill_id);
-      return NextResponse.json(result || { error: 'Bill not found' });
+      if (!body.bill_id) return badRequest('Bill ID required');
+      markBillPaid(body.bill_id);
+      return success();
     }
+    if (!body.name || !body.amount) return badRequest('Name and amount required');
     const id = addBill(body);
-    return NextResponse.json({ id, success: true });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return success({ id });
+  } catch (err) {
+    return error(err.message);
   }
 }
