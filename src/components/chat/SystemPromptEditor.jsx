@@ -12,8 +12,11 @@ export function SystemPromptEditor({ conversationId, value, onChange }) {
   const [open, setOpen] = useState(false);
 
   async function handleSave() {
+    // If no conversation yet, just set local state — it'll be used when the conversation starts
     if (!conversationId) {
-      toast.error('Start a conversation first');
+      onChange?.(draft);
+      toast.success('System prompt set — will apply to next message');
+      setOpen(false);
       return;
     }
     try {
