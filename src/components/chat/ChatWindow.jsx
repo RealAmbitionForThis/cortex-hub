@@ -51,6 +51,8 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
       attachments,
       temperature: chatSettings.temperature,
       contextWindow: chatSettings.contextWindow,
+      projectId,
+      systemPromptOverride: systemPromptOverride || undefined,
     });
     setInput('');
     setAttachments([]);

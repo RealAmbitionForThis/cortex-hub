@@ -10,10 +10,10 @@ import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, temperature, contextWindow } = body;
+    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, temperature, contextWindow, projectId, systemPromptOverride } = body;
     const db = getDb();
 
-    const convId = conversationId || await createConversation(db, model);
+    const convId = conversationId || await createConversation(db, model, projectId, systemPromptOverride);
     saveUserMessage(db, convId, message, reasoningLevel);
 
     const memories = await retrieveRelevantMemories({ query: message });
@@ -180,14 +180,14 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
   }
 }
 
-function createConversation(db, model) {
+function createConversation(db, model, projectId, systemPromptOverride) {
   const id = uuidv4();
   let mainModel = model;
   if (!mainModel) {
     const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
     mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
   }
-  db.prepare('INSERT INTO conversations (id, title, model, created_at, updated_at) VALUES (?, ?, ?, datetime(\'now\'), datetime(\'now\'))').run(id, 'New Chat', mainModel);
+  db.prepare('INSERT INTO conversations (id, title, model, project_id, system_prompt_override, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))').run(id, 'New Chat', mainModel, projectId || null, systemPromptOverride || null);
   return id;
 }
 

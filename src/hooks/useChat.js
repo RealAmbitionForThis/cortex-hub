@@ -24,7 +24,7 @@ export function useChat() {
     }
   }, []);
 
-  const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, temperature, contextWindow }) => {
+  const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, temperature, contextWindow, projectId, systemPromptOverride }) => {
     setStreaming(true);
 
     const userMsg = { id: crypto.randomUUID(), role: 'user', content: message };
@@ -66,6 +66,8 @@ export function useChat() {
           enabledTools,
           temperature,
           contextWindow,
+          projectId,
+          systemPromptOverride,
         }),
       });
 

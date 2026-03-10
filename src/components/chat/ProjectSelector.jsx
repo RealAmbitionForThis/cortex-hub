@@ -34,8 +34,11 @@ export function ProjectSelector({ conversationId, currentProjectId, onProjectCha
   const currentProject = projects.find(p => p.id === currentProjectId);
 
   async function handleSelectProject(projectId) {
+    // If no conversation yet, just set local state — it'll be applied when the conversation starts
     if (!conversationId) {
-      toast.error('Start a conversation first');
+      onProjectChange?.(projectId);
+      toast.success(projectId ? 'Project selected — will apply to next message' : 'Project removed');
+      setOpen(false);
       return;
     }
     try {

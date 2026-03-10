@@ -3,6 +3,22 @@ export function runMigrations(db) {
   createModuleTables(db);
   createSystemTables(db);
   createIndexes(db);
+  runAlterMigrations(db);
+}
+
+function runAlterMigrations(db) {
+  // Safely add columns that may be missing on existing databases
+  const alterStatements = [
+    'ALTER TABLE conversations ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL',
+    'ALTER TABLE conversations ADD COLUMN system_prompt_override TEXT',
+  ];
+  for (const sql of alterStatements) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Column already exists — ignore
+    }
+  }
 }
 
 function createIndexes(db) {
