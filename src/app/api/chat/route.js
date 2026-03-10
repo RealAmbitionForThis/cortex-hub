@@ -10,7 +10,7 @@ import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, temperature, contextWindow, projectId, systemPromptOverride } = body;
+    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, samplingParams, projectId, systemPromptOverride } = body;
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model, projectId, systemPromptOverride);
@@ -62,9 +62,9 @@ export async function POST(request) {
 
     const { stream, send, close, error: streamError } = createSSEStream();
 
-    const ollamaOptions = {};
-    if (temperature !== undefined) ollamaOptions.temperature = temperature;
-    if (contextWindow) ollamaOptions.num_ctx = contextWindow;
+    // samplingParams is already in Ollama option key format (temperature, top_p, num_ctx, etc.)
+    // built by buildOllamaOptions() on the frontend — pass through as-is
+    const ollamaOptions = samplingParams && typeof samplingParams === 'object' ? { ...samplingParams } : {};
 
     // Send debug info so the frontend can show exact inputs
     send({ type: 'debug', systemPrompt, messagesCount: messages.length, projectPrompt: projectPrompt || null, model: mainModel });

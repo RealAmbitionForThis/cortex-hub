@@ -7,12 +7,21 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
     stream,
   };
 
+  // Map Ollama option keys to OpenAI / llama-server compatible keys
   if (options.temperature !== undefined) body.temperature = options.temperature;
   if (options.num_ctx) body.max_tokens = options.num_ctx;
+  if (options.num_predict !== undefined && options.num_predict >= 0) body.max_tokens = options.num_predict;
   if (options.top_p !== undefined) body.top_p = options.top_p;
-  if (options.stop) body.stop = options.stop;
-  if (options.frequency_penalty !== undefined) body.frequency_penalty = options.frequency_penalty;
+  if (options.top_k !== undefined) body.top_k = options.top_k;
+  if (options.min_p !== undefined) body.min_p = options.min_p;
+  if (options.stop && options.stop.length > 0) body.stop = options.stop;
+  if (options.repeat_penalty !== undefined) body.frequency_penalty = options.repeat_penalty;
   if (options.presence_penalty !== undefined) body.presence_penalty = options.presence_penalty;
+  if (options.seed !== undefined && options.seed >= 0) body.seed = options.seed;
+  if (options.mirostat !== undefined) body.mirostat = options.mirostat;
+  if (options.mirostat_tau !== undefined) body.mirostat_tau = options.mirostat_tau;
+  if (options.mirostat_eta !== undefined) body.mirostat_eta = options.mirostat_eta;
+  if (options.tfs_z !== undefined) body.tfs_z = options.tfs_z;
 
   if (tools?.length) {
     body.tools = tools;
