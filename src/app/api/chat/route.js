@@ -85,6 +85,7 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
     const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions });
     let fullContent = '';
     let toolCalls = [];
+    let tokenStats = null;
 
     for await (const chunk of parseOllamaStream(res)) {
       if (chunk.message?.content) {
@@ -94,29 +95,50 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
       if (chunk.message?.tool_calls) {
         toolCalls = chunk.message.tool_calls;
       }
-      if (chunk.done) break;
+      if (chunk.done) {
+        tokenStats = {
+          prompt_tokens: chunk.prompt_eval_count || 0,
+          completion_tokens: chunk.eval_count || 0,
+          total_tokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0),
+          eval_duration_ms: chunk.eval_duration ? Math.round(chunk.eval_duration / 1e6) : 0,
+          total_duration_ms: chunk.total_duration ? Math.round(chunk.total_duration / 1e6) : 0,
+          tokens_per_second: chunk.eval_count && chunk.eval_duration
+            ? Math.round((chunk.eval_count / (chunk.eval_duration / 1e9)) * 10) / 10
+            : 0,
+        };
+        break;
+      }
     }
 
     if (toolCalls.length > 0) {
-      await handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools });
+      await handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools, tokenStats });
       return;
     }
 
-    saveAssistantMessage(db, convId, fullContent, null, reasoningLevel);
+    saveAssistantMessage(db, convId, fullContent, null, reasoningLevel, tokenStats);
     updateConversationTitle(db, convId, fullContent);
-    send({ type: 'done', conversationId: convId });
+    send({ type: 'done', conversationId: convId, tokenStats });
     close();
   } catch (err) {
     streamError(err);
   }
 }
 
-async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools }) {
+async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools, tokenStats: initialStats }) {
   const MAX_TOOL_ROUNDS = 10;
   try {
     let currentMessages = [...messages];
     let currentToolCalls = toolCalls;
     let currentContent = fullContent;
+    // Accumulate token stats across all rounds
+    let totalStats = {
+      prompt_tokens: initialStats?.prompt_tokens || 0,
+      completion_tokens: initialStats?.completion_tokens || 0,
+      total_tokens: initialStats?.total_tokens || 0,
+      eval_duration_ms: initialStats?.eval_duration_ms || 0,
+      total_duration_ms: initialStats?.total_duration_ms || 0,
+      tokens_per_second: initialStats?.tokens_per_second || 0,
+    };
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const toolResults = [];
@@ -153,14 +175,25 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
         if (chunk.message?.tool_calls) {
           nextToolCalls = chunk.message.tool_calls;
         }
-        if (chunk.done) break;
+        if (chunk.done) {
+          // Accumulate stats from this round
+          totalStats.prompt_tokens += chunk.prompt_eval_count || 0;
+          totalStats.completion_tokens += chunk.eval_count || 0;
+          totalStats.total_tokens += (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0);
+          totalStats.eval_duration_ms += chunk.eval_duration ? Math.round(chunk.eval_duration / 1e6) : 0;
+          totalStats.total_duration_ms += chunk.total_duration ? Math.round(chunk.total_duration / 1e6) : 0;
+          if (chunk.eval_count && chunk.eval_duration) {
+            totalStats.tokens_per_second = Math.round((chunk.eval_count / (chunk.eval_duration / 1e9)) * 10) / 10;
+          }
+          break;
+        }
       }
 
       // If no more tool calls, we're done
       if (nextToolCalls.length === 0) {
-        saveAssistantMessage(db, convId, nextContent, null, reasoningLevel);
+        saveAssistantMessage(db, convId, nextContent, null, reasoningLevel, totalStats);
         updateConversationTitle(db, convId, nextContent);
-        send({ type: 'done', conversationId: convId });
+        send({ type: 'done', conversationId: convId, tokenStats: totalStats });
         close();
         return;
       }
@@ -196,8 +229,11 @@ function saveUserMessage(db, convId, content, reasoningLevel) {
   db.prepare('UPDATE conversations SET updated_at = datetime(\'now\') WHERE id = ?').run(convId);
 }
 
-function saveAssistantMessage(db, convId, content, toolCalls, reasoningLevel) {
-  db.prepare('INSERT INTO messages (id, conversation_id, role, content, tool_calls, reasoning_level, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime(\'now\'))').run(uuidv4(), convId, 'assistant', content, toolCalls, reasoningLevel || null);
+function saveAssistantMessage(db, convId, content, toolCalls, reasoningLevel, tokenStats) {
+  db.prepare('INSERT INTO messages (id, conversation_id, role, content, tool_calls, reasoning_level, tokens_used, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'))').run(
+    uuidv4(), convId, 'assistant', content, toolCalls, reasoningLevel || null,
+    tokenStats ? JSON.stringify(tokenStats) : null
+  );
 }
 
 function getMessageHistory(db, convId) {

@@ -15,6 +15,7 @@ import { ToolToggle } from './ToolToggle';
 import { ProjectSelector } from './ProjectSelector';
 import { SystemPromptEditor } from './SystemPromptEditor';
 import { ClusterSwitcher } from './ClusterSwitcher';
+import { TokenAnalytics } from './TokenAnalytics';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { MessageSquare } from 'lucide-react';
 
@@ -84,9 +85,10 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
 
   return (
     <div className="flex flex-col h-full">
-      {/* Top bar - cluster switcher */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b">
+      {/* Top bar - cluster switcher + token analytics */}
+      <div className="flex items-center justify-between px-4 py-2 border-b">
         <ClusterSwitcher />
+        <TokenAnalytics messages={messages} chatSettings={chatSettings} />
       </div>
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
