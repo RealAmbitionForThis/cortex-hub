@@ -74,9 +74,7 @@ export function getUpcomingReminders() {
   `).all();
 
   return dates.map(d => {
-    let tags = [];
-    if (d.tags) { try { tags = JSON.parse(d.tags); } catch { /* malformed tags */ } }
-    return { ...d, tags, days_until: Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24)) };
+    return { ...d, tags: parseTags(d.tags), days_until: Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24)) };
   });
 }
 

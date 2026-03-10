@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { StatCard } from '@/components/shared/StatCard';
 import { Plus, Package, Shield, AlertTriangle, DollarSign, Search, Trash2, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/format';
+import { daysUntil } from '@/lib/utils/date';
 import { INVENTORY_CATEGORIES, WARRANTY_TYPES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -106,7 +107,7 @@ export default function InventoryPage() {
 
   function warrantyStatus(item) {
     if (!item.warranty_expiry) return null;
-    const days = Math.ceil((new Date(item.warranty_expiry) - new Date()) / (1000 * 60 * 60 * 24));
+    const days = daysUntil(item.warranty_expiry);
     if (days < 0) return { label: 'Expired', variant: 'destructive', days };
     if (days <= 30) return { label: `${days}d left`, variant: 'destructive', days };
     if (days <= 90) return { label: `${days}d left`, variant: 'default', days };
