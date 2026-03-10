@@ -57,8 +57,8 @@ export async function analyzeMessages(messages, model) {
     if (extracted) {
       await processExtracted(extracted, messages[0]?.id);
     }
-  } catch {
-    // Analysis failed silently
+  } catch (e) {
+    console.error('[memory/analyzer] Analysis failed:', e.message);
   }
 }
 

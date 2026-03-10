@@ -19,7 +19,9 @@ export class SSETransport {
         try {
           const data = JSON.parse(event.data);
           for (const handler of this.messageHandlers) handler(data);
-        } catch {}
+        } catch (e) {
+          console.error('[mcp/transport] Failed to parse SSE message:', e.message);
+        }
       };
 
       this.eventSource.onerror = (err) => {
@@ -39,6 +41,9 @@ export class SSETransport {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message),
     });
+    if (!res.ok) {
+      throw new Error(`MCP send failed: ${res.status} ${res.statusText}`);
+    }
     return res.json();
   }
 

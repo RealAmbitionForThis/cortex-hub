@@ -26,21 +26,21 @@ export async function GET() {
           total_vram_used_mb: Math.round((data.models || []).reduce((sum, m) => sum + (m.size_vram || 0), 0) / 1048576),
         };
       }
-    } catch {}
+    } catch (e) { console.error('[system/status] Ollama check failed:', e.message); }
 
     // GPU info via nvidia-smi
     let gpu = null;
     try {
       const output = execSync('nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu --format=csv,noheader,nounits', { timeout: 5000 }).toString().trim();
-      const [name, total, used, free, util] = output.split(', ').map(s => s.trim());
+      const parts = output.split(', ').map(s => s.trim());
       gpu = {
-        name,
-        vram_total_mb: parseInt(total),
-        vram_used_mb: parseInt(used),
-        vram_free_mb: parseInt(free),
-        utilization_percent: parseInt(util),
+        name: parts[0] || 'Unknown',
+        vram_total_mb: parseInt(parts[1]) || 0,
+        vram_used_mb: parseInt(parts[2]) || 0,
+        vram_free_mb: parseInt(parts[3]) || 0,
+        utilization_percent: parseInt(parts[4]) || 0,
       };
-    } catch {}
+    } catch { /* nvidia-smi not available */ }
 
     // Cortex stats
     const db = getDb();
@@ -48,13 +48,13 @@ export async function GET() {
     let dbSizeMb = 0;
     try { dbSizeMb = Math.round(fs.statSync(dbPath).size / 1048576 * 10) / 10; } catch {}
 
-    const memoryCount = db.prepare('SELECT COUNT(*) as c FROM memories').get().c;
-    const conversationCount = db.prepare('SELECT COUNT(*) as c FROM conversations').get().c;
-    const taskCountActive = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status != 'done'").get().c;
+    const memoryCount = db.prepare('SELECT COUNT(*) as c FROM memories').get()?.c ?? 0;
+    const conversationCount = db.prepare('SELECT COUNT(*) as c FROM conversations').get()?.c ?? 0;
+    const taskCountActive = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status != 'done'").get()?.c ?? 0;
 
     const today = new Date().toISOString().split('T')[0];
     const threeDaysLater = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
-    const billsDueSoon = db.prepare('SELECT COUNT(*) as c FROM bills WHERE next_due BETWEEN ? AND ?').get(today, threeDaysLater).c;
+    const billsDueSoon = db.prepare('SELECT COUNT(*) as c FROM bills WHERE next_due BETWEEN ? AND ?').get(today, threeDaysLater)?.c ?? 0;
 
     const cortex = {
       db_size_mb: dbSizeMb,

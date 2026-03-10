@@ -7,7 +7,7 @@ export function initializeBuiltInJobs() {
     try {
       const { analyzeRecentConversations } = await import('@/lib/memory/analyzer');
       await analyzeRecentConversations();
-    } catch {}
+    } catch (e) { console.error('[scheduler] memory-analyzer job failed:', e.message); }
   });
 
   // Daily log — 11 PM daily
@@ -15,7 +15,7 @@ export function initializeBuiltInJobs() {
     try {
       const { generateDailyLog } = await import('@/lib/memory/daily-log');
       await generateDailyLog();
-    } catch {}
+    } catch (e) { console.error('[scheduler] daily-log job failed:', e.message); }
   });
 
   // Bill check — 9 AM daily
@@ -32,7 +32,7 @@ export function initializeBuiltInJobs() {
         const { sendBillReminder } = await import('@/lib/notify/ntfy');
         for (const bill of bills) await sendBillReminder(bill);
       }
-    } catch {}
+    } catch (e) { console.error('[scheduler] bill-check job failed:', e.message); }
   });
 
   // Important dates reminder — 8 AM daily
@@ -52,7 +52,7 @@ export function initializeBuiltInJobs() {
           markNotified(r.id);
         }
       }
-    } catch {}
+    } catch (e) { console.error('[scheduler] important-dates-check job failed:', e.message); }
   });
 
   // Warranty expiry check — 9 AM on Mondays
@@ -69,7 +69,7 @@ export function initializeBuiltInJobs() {
           tags: ['shield'],
         });
       }
-    } catch {}
+    } catch (e) { console.error('[scheduler] warranty-check job failed:', e.message); }
   });
 
   // Task overdue check — 10 AM daily
@@ -90,7 +90,7 @@ export function initializeBuiltInJobs() {
           tags: ['warning'],
         });
       }
-    } catch {}
+    } catch (e) { console.error('[scheduler] task-overdue job failed:', e.message); }
   });
 }
 
@@ -102,9 +102,10 @@ export function loadCustomSchedules() {
       scheduleJob(`custom-${schedule.id}`, schedule.cron_expression, async () => {
         try {
           const { executeTool } = await import('@/lib/tools/registry');
-          await executeTool(schedule.action, JSON.parse(schedule.params || '{}'));
-        } catch {}
+          const params = (() => { try { return JSON.parse(schedule.params || '{}'); } catch { return {}; } })();
+          await executeTool(schedule.action, params);
+        } catch (e) { console.error(`[scheduler] custom-${schedule.id} job failed:`, e.message); }
       });
     }
-  } catch {}
+  } catch (e) { console.error('[scheduler] Failed to load custom schedules:', e.message); }
 }

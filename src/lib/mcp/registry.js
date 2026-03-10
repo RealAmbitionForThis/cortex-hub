@@ -6,7 +6,7 @@ export function getMcpServers() {
   return db.prepare('SELECT * FROM mcp_servers ORDER BY name ASC').all().map(s => ({
     ...s,
     enabled: Boolean(s.enabled),
-    config: s.config ? JSON.parse(s.config) : {},
+    config: (() => { try { return s.config ? JSON.parse(s.config) : {}; } catch { return {}; } })(),
   }));
 }
 

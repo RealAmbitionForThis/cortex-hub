@@ -14,8 +14,8 @@ export async function GET() {
 
     const generations = rows.map((row) => ({
       ...row,
-      input_params: row.input_params ? JSON.parse(row.input_params) : [],
-      output_images: row.output_images ? JSON.parse(row.output_images) : [],
+      input_params: (() => { try { return row.input_params ? JSON.parse(row.input_params) : []; } catch { return []; } })(),
+      output_images: (() => { try { return row.output_images ? JSON.parse(row.output_images) : []; } catch { return []; } })(),
     }));
 
     return success({ generations });

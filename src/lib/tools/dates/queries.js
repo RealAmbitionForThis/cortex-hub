@@ -24,15 +24,16 @@ export function getImportantDates({ type, upcoming_days, past } = {}) {
     query += " AND date < date('now')";
   }
   query += ' ORDER BY date ASC';
-  return getDb().prepare(query).all(...params).map(d => ({
-    ...d,
-    tags: d.tags ? JSON.parse(d.tags) : [],
-  }));
+  return getDb().prepare(query).all(...params).map(d => {
+    let tags = [];
+    if (d.tags) { try { tags = JSON.parse(d.tags); } catch { /* malformed tags */ } }
+    return { ...d, tags };
+  });
 }
 
 export function getImportantDate(id) {
   const d = getDb().prepare('SELECT * FROM important_dates WHERE id = ?').get(id);
-  if (d && d.tags) d.tags = JSON.parse(d.tags);
+  if (d && d.tags) { try { d.tags = JSON.parse(d.tags); } catch { d.tags = []; } }
   return d;
 }
 
@@ -73,11 +74,11 @@ export function getUpcomingReminders() {
     ORDER BY date ASC
   `).all();
 
-  return dates.map(d => ({
-    ...d,
-    tags: d.tags ? JSON.parse(d.tags) : [],
-    days_until: Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24)),
-  }));
+  return dates.map(d => {
+    let tags = [];
+    if (d.tags) { try { tags = JSON.parse(d.tags); } catch { /* malformed tags */ } }
+    return { ...d, tags, days_until: Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24)) };
+  });
 }
 
 export function markNotified(id) {
@@ -98,9 +99,9 @@ export function getDateStats() {
   ).get();
 
   return {
-    total: total.count,
-    upcoming_30: upcoming30.count,
-    overdue: overdue.count,
+    total: total?.count ?? 0,
+    upcoming_30: upcoming30?.count ?? 0,
+    overdue: overdue?.count ?? 0,
     next: nextDate ? { title: nextDate.title, date: nextDate.date, type: nextDate.type } : null,
   };
 }
@@ -114,8 +115,9 @@ export function getTimeline(year) {
     params.push(`${year}%`);
   }
   query += ' ORDER BY date ASC';
-  return getDb().prepare(query).all(...params).map(d => ({
-    ...d,
-    tags: d.tags ? JSON.parse(d.tags) : [],
-  }));
+  return getDb().prepare(query).all(...params).map(d => {
+    let tags = [];
+    if (d.tags) { try { tags = JSON.parse(d.tags); } catch { /* malformed tags */ } }
+    return { ...d, tags };
+  });
 }

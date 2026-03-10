@@ -91,5 +91,9 @@ export function getUpcomingFollowups() {
 }
 
 function parseContact(row) {
-  return { ...row, tags: row.tags ? JSON.parse(row.tags) : [] };
+  let tags = [];
+  if (row.tags) {
+    try { tags = JSON.parse(row.tags); } catch { console.error('[contacts] Malformed tags JSON for contact', row.id); }
+  }
+  return { ...row, tags };
 }

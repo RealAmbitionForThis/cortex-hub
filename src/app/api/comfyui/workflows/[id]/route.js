@@ -2,11 +2,12 @@ import { success, error, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 
 function parseWorkflow(row) {
+  const safeParse = (str, fallback) => { try { return str ? JSON.parse(str) : fallback; } catch { return fallback; } };
   return {
     ...row,
-    workflow_json: row.workflow_json ? JSON.parse(row.workflow_json) : null,
-    parameters: row.parameters ? JSON.parse(row.parameters) : [],
-    tags: row.tags ? JSON.parse(row.tags) : [],
+    workflow_json: safeParse(row.workflow_json, null),
+    parameters: safeParse(row.parameters, []),
+    tags: safeParse(row.tags, []),
   };
 }
 

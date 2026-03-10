@@ -69,7 +69,7 @@ export async function POST(request) {
         let analysisModel = model;
         if (!analysisModel) {
           const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
-          analysisModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
+          try { analysisModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'); } catch { analysisModel = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'; }
         }
 
         // Non-streaming analysis call with low reasoning + timeout
@@ -166,7 +166,7 @@ export async function POST(request) {
     let mainModel = model;
     if (!mainModel) {
       const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
-      mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
+      try { mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'); } catch { mainModel = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'; }
     }
 
     const { stream, send, close, error: streamError } = createSSEStream();
@@ -353,7 +353,7 @@ function createConversation(db, model, projectId, systemPromptOverride) {
   let mainModel = model;
   if (!mainModel) {
     const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
-    mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
+    try { mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'); } catch { mainModel = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'; }
   }
   db.prepare('INSERT INTO conversations (id, title, model, project_id, system_prompt_override, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))').run(id, 'New Chat', mainModel, projectId || null, systemPromptOverride || null);
   return id;
@@ -379,7 +379,7 @@ function getMessageHistory(db, convId) {
     if (row.tool_calls) {
       try {
         msg.tool_calls = JSON.parse(row.tool_calls);
-      } catch {}
+      } catch { /* malformed tool_calls JSON */ }
     }
     return msg;
   });

@@ -124,12 +124,16 @@ export const calcTools = [
     description: 'Evaluate a mathematical expression and return the result. Use for any arithmetic, percentages, tips, splits, etc.',
     parameters: { type: 'object', properties: { expression: { type: 'string' } }, required: ['expression'] },
     handler: ({ expression }) => {
-      const sanitized = sanitizeExpression(expression);
-      const result = new Function('return ' + sanitized)();
-      if (typeof result !== 'number' || !isFinite(result)) {
-        throw new Error('Expression did not evaluate to a valid number');
+      try {
+        const sanitized = sanitizeExpression(expression);
+        const result = new Function('return ' + sanitized)();
+        if (typeof result !== 'number' || !isFinite(result)) {
+          return { error: 'Expression did not evaluate to a valid number' };
+        }
+        return { result, expression: sanitized };
+      } catch (e) {
+        return { error: e.message };
       }
-      return { result, expression: sanitized };
     },
   },
   {
@@ -137,9 +141,13 @@ export const calcTools = [
     description: 'Convert between units. Supports: length (miles/km/meters/feet/inches/cm), weight (lbs/kg/oz/g), temperature (F/C/K), volume (gallons/liters/cups/ml).',
     parameters: { type: 'object', properties: { value: { type: 'number' }, from_unit: { type: 'string' }, to_unit: { type: 'string' } }, required: ['value', 'from_unit', 'to_unit'] },
     handler: ({ value, from_unit, to_unit }) => {
-      const result = convertUnit(value, from_unit, to_unit);
-      const rounded = Math.round(result * 1000000) / 1000000;
-      return { result: rounded, from: from_unit, to: to_unit, expression: `${value} ${from_unit} = ${rounded} ${to_unit}` };
+      try {
+        const result = convertUnit(value, from_unit, to_unit);
+        const rounded = Math.round(result * 1000000) / 1000000;
+        return { result: rounded, from: from_unit, to: to_unit, expression: `${value} ${from_unit} = ${rounded} ${to_unit}` };
+      } catch (e) {
+        return { error: e.message };
+      }
     },
   },
   {
