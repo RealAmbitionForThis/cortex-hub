@@ -6,23 +6,40 @@ import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LEVELS = [
-  { value: 'low', label: 'Quick', color: 'text-green-500' },
-  { value: 'medium', label: 'Balanced', color: 'text-yellow-500' },
-  { value: 'high', label: 'Deep', color: 'text-red-500' },
+  { value: 'low', label: 'Quick', color: 'text-green-500', description: 'Fast responses' },
+  { value: 'medium', label: 'Balanced', color: 'text-yellow-500', description: 'Default thinking' },
+  { value: 'high', label: 'Deep', color: 'text-red-500', description: 'Maximum reasoning' },
 ];
 
-export function ReasoningLevelPicker({ value, onChange }) {
+// Models that support extended thinking/reasoning
+const THINKING_MODEL_PATTERNS = [
+  'deepseek', 'qwen', 'llama', 'mistral', 'gemma', 'phi',
+  'command-r', 'wizardlm', 'solar', 'yi',
+];
+
+export function supportsThinking(modelName) {
+  if (!modelName) return true; // Show by default if no model info
+  const lower = modelName.toLowerCase();
+  return THINKING_MODEL_PATTERNS.some(p => lower.includes(p));
+}
+
+export function ReasoningLevelPicker({ value, onChange, modelName }) {
+  if (modelName && !supportsThinking(modelName)) {
+    return null;
+  }
+
   const current = LEVELS.find((l) => l.value === value) || LEVELS[1];
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1">
-          <Brain className={cn('h-4 w-4', current.color)} />
+        <Button variant="ghost" size="sm" className="gap-1 h-8">
+          <Brain className={cn('h-3.5 w-3.5', current.color)} />
           <span className="text-xs hidden sm:inline">{current.label}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-40 p-1" align="start">
+      <PopoverContent className="w-48 p-1" align="start" side="top">
+        <p className="text-xs font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">Thinking Level</p>
         {LEVELS.map((level) => (
           <button
             key={level.value}
@@ -33,7 +50,10 @@ export function ReasoningLevelPicker({ value, onChange }) {
             )}
           >
             <Brain className={cn('h-4 w-4', level.color)} />
-            {level.label}
+            <div>
+              <span className="font-medium">{level.label}</span>
+              <p className="text-xs text-muted-foreground">{level.description}</p>
+            </div>
           </button>
         ))}
       </PopoverContent>

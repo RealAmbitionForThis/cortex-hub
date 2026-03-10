@@ -30,7 +30,7 @@ export async function POST(request) {
       const id = logFuel(body);
       return success({ id });
     }
-    if (!body.name) return badRequest('Vehicle name required');
+    if (!body.make) return badRequest('Vehicle make is required');
     const id = addVehicle(body);
     return success({ id });
   } catch (err) {

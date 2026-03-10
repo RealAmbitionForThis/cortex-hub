@@ -39,5 +39,12 @@ cortex.db-shm
 /exports/*.csv
 /exports/*.json
 
-# uploads
-/uploads/
+# uploads (keep dirs via .gitkeep)
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/documents/
+/uploads/documents/*
+!/uploads/documents/.gitkeep
+!/uploads/clusters/
+/uploads/clusters/*
+!/uploads/clusters/.gitkeep
