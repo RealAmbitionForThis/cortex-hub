@@ -1,4 +1,4 @@
-import { addTransaction, getBalance, getSpendingByCategory, setBudget, addBill, getUpcomingBills, markBillPaid, getTransactions } from './queries';
+import { addTransaction, getBalance, getSpendingByCategory, setBudget, addBill, getUpcomingBills, markBillPaid, getTransactions, addSubscription, getSubscriptions, getSubscriptionTotal, updateSubscriptionUsage, addWishlistItem, getWishlistItems, markWishlistPurchased, createPod, getPods, contributeToPod, getWishlistBudgetInsight } from './queries';
 
 export const moneyTools = [
   {
@@ -52,5 +52,53 @@ export const moneyTools = [
     description: 'Import transactions from a CSV file',
     parameters: { type: 'object', properties: { filepath: { type: 'string' } }, required: ['filepath'] },
     handler: () => ({ message: 'CSV import not yet configured from chat. Use the Exports page.' }),
+  },
+  {
+    name: 'money.add_subscription',
+    description: 'Add a recurring subscription (Netflix, Spotify, gym, etc.)',
+    parameters: { type: 'object', properties: { name: { type: 'string' }, amount: { type: 'number' }, frequency: { type: 'string', description: 'monthly/weekly/yearly etc.' }, category: { type: 'string' }, service_url: { type: 'string' }, usage_rating: { type: 'number', description: '1-5 how much you use it' } }, required: ['name', 'amount'] },
+    handler: (p) => ({ success: true, id: addSubscription(p) }),
+  },
+  {
+    name: 'money.get_subscriptions',
+    description: 'Get all active subscriptions with total monthly burn',
+    parameters: { type: 'object', properties: {} },
+    handler: () => ({ subscriptions: getSubscriptions(), monthly_total: getSubscriptionTotal() }),
+  },
+  {
+    name: 'money.rate_subscription_usage',
+    description: 'Rate how much you use a subscription (1-5)',
+    parameters: { type: 'object', properties: { id: { type: 'string' }, usage_rating: { type: 'number' }, last_used: { type: 'string' } }, required: ['id', 'usage_rating'] },
+    handler: (p) => { updateSubscriptionUsage(p.id, p.usage_rating, p.last_used); return { success: true }; },
+  },
+  {
+    name: 'money.add_wishlist_item',
+    description: 'Add an item to the wishlist with target price, priority, and optional link',
+    parameters: { type: 'object', properties: { name: { type: 'string' }, target_price: { type: 'number' }, url: { type: 'string' }, priority: { type: 'string', description: 'low/medium/high' }, category: { type: 'string' }, notes: { type: 'string' } }, required: ['name'] },
+    handler: (p) => ({ success: true, id: addWishlistItem(p) }),
+  },
+  {
+    name: 'money.get_wishlist',
+    description: 'Get wishlist items with optional filtering and budget insight',
+    parameters: { type: 'object', properties: { priority: { type: 'string' }, purchased: { type: 'boolean' } } },
+    handler: (p) => ({ items: getWishlistItems(p), insight: getWishlistBudgetInsight() }),
+  },
+  {
+    name: 'money.create_pod',
+    description: 'Create a savings pod to save toward a goal or wishlist item',
+    parameters: { type: 'object', properties: { name: { type: 'string' }, target_amount: { type: 'number' }, wishlist_item_id: { type: 'string' } }, required: ['name', 'target_amount'] },
+    handler: (p) => ({ success: true, id: createPod(p) }),
+  },
+  {
+    name: 'money.contribute_to_pod',
+    description: 'Add money to a savings pod',
+    parameters: { type: 'object', properties: { pod_id: { type: 'string' }, amount: { type: 'number' }, note: { type: 'string' } }, required: ['pod_id', 'amount'] },
+    handler: (p) => ({ success: true, id: contributeToPod(p.pod_id, p.amount, p.note) }),
+  },
+  {
+    name: 'money.get_pods',
+    description: 'Get all savings pods with progress',
+    parameters: { type: 'object', properties: {} },
+    handler: () => ({ pods: getPods() }),
   },
 ];

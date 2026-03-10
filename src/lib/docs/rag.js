@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { generateEmbedding } from '@/lib/llm/client';
+import { generateEmbedding } from '@/lib/llm/provider';
 import { cosineSimilarity, vectorToBuffer, bufferToVector } from '@/lib/memory/embeddings';
 import { chunkText } from './parser';
 import { v4 as uuid } from 'uuid';

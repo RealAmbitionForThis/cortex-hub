@@ -1,5 +1,5 @@
 import { success, error, badRequest } from '@/lib/api/response';
-import { logMeal, logWorkout, getMeals, getWorkouts, getHealthStats, setHealthGoal, getHealthGoals } from '@/lib/tools/health/queries';
+import { logMeal, logWorkout, getMeals, getWorkouts, getHealthStats, setHealthGoal, getHealthGoals, logSleep, getSleepLogs, getSleepStats, getSleepMoodCorrelation } from '@/lib/tools/health/queries';
 
 export async function GET(request) {
   try {
@@ -9,7 +9,9 @@ export async function GET(request) {
     if (view === 'meals') return success({ meals: getMeals(searchParams.get('date')) });
     if (view === 'workouts') return success({ workouts: getWorkouts() });
     if (view === 'goals') return success({ goals: getHealthGoals() });
-    return success({ stats: getHealthStats(), meals: getMeals(), workouts: getWorkouts(5), goals: getHealthGoals() });
+    if (view === 'sleep') return success({ sleep: getSleepLogs() });
+    if (view === 'sleep_stats') return success({ sleep_stats: getSleepStats(), correlation: getSleepMoodCorrelation() });
+    return success({ stats: getHealthStats(), meals: getMeals(), workouts: getWorkouts(5), goals: getHealthGoals(), sleep: getSleepLogs(7), sleep_stats: getSleepStats() });
   } catch (err) {
     return error(err.message);
   }
@@ -32,7 +34,12 @@ export async function POST(request) {
       setHealthGoal(body);
       return success();
     }
-    return badRequest('Invalid type. Use meal, workout, or goal.');
+    if (body.type === 'sleep') {
+      if (!body.bedtime && !body.wake_time && !body.duration_hours) return badRequest('Bedtime/wake time or duration required');
+      const id = logSleep(body);
+      return success({ id });
+    }
+    return badRequest('Invalid type. Use meal, workout, sleep, or goal.');
   } catch (err) {
     return error(err.message);
   }

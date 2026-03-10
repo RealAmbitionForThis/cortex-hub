@@ -1,5 +1,5 @@
 import { success, error } from '@/lib/api/response';
-import { listModels, showModel } from '@/lib/llm/client';
+import { listModels, showModel } from '@/lib/llm/provider';
 
 export async function GET(request) {
   try {

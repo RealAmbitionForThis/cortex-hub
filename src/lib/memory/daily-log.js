@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { chatCompletion } from '@/lib/llm/client';
+import { chatCompletion } from '@/lib/llm/provider';
 import { textToVector, vectorToBuffer } from './embeddings';
 import { v4 as uuidv4 } from 'uuid';
 import { parseJsonSafe } from '@/lib/utils/format';

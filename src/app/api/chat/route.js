@@ -1,8 +1,8 @@
 import { success, error as errorResponse, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
-import { chatCompletion } from '@/lib/llm/client';
-import { parseOllamaStream, createSSEStream } from '@/lib/llm/streaming';
+import { chatCompletion, getBackend } from '@/lib/llm/provider';
+import { parseStream, createSSEStream } from '@/lib/llm/streaming';
 import { buildSystemPrompt } from '@/lib/llm/prompts';
 import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
@@ -10,7 +10,7 @@ import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, temperature, contextWindow, projectId, systemPromptOverride } = body;
+    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, samplingParams, projectId, systemPromptOverride } = body;
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model, projectId, systemPromptOverride);
@@ -62,9 +62,9 @@ export async function POST(request) {
 
     const { stream, send, close, error: streamError } = createSSEStream();
 
-    const ollamaOptions = {};
-    if (temperature !== undefined) ollamaOptions.temperature = temperature;
-    if (contextWindow) ollamaOptions.num_ctx = contextWindow;
+    // samplingParams is already in Ollama option key format (temperature, top_p, num_ctx, etc.)
+    // built by buildOllamaOptions() on the frontend — pass through as-is
+    const ollamaOptions = samplingParams && typeof samplingParams === 'object' ? { ...samplingParams } : {};
 
     // Send debug info so the frontend can show exact inputs
     send({ type: 'debug', systemPrompt, messagesCount: messages.length, projectPrompt: projectPrompt || null, model: mainModel });
@@ -93,7 +93,7 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
     let toolCalls = [];
     let tokenStats = null;
 
-    for await (const chunk of parseOllamaStream(res)) {
+    for await (const chunk of parseStream(res, getBackend())) {
       // Ollama returns thinking in message.thinking when think=true
       if (chunk.message?.thinking) {
         thinkingContent += chunk.message.thinking;
@@ -188,7 +188,7 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
       let nextContent = '';
       let nextToolCalls = [];
 
-      for await (const chunk of parseOllamaStream(res)) {
+      for await (const chunk of parseStream(res, getBackend())) {
         if (chunk.message?.content) {
           nextContent += chunk.message.content;
           send({ type: 'content', content: chunk.message.content, conversationId: convId });

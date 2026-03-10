@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { chatCompletion } from '@/lib/llm/client';
+import { chatCompletion } from '@/lib/llm/provider';
 import { textToVector, vectorToBuffer } from './embeddings';
 import { findSimilarMemory, shouldUpdate } from './dedup';
 import { v4 as uuidv4 } from 'uuid';

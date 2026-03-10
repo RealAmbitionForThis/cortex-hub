@@ -11,6 +11,10 @@ function runAlterMigrations(db) {
   const alterStatements = [
     'ALTER TABLE conversations ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL',
     'ALTER TABLE conversations ADD COLUMN system_prompt_override TEXT',
+    'ALTER TABLE bills ADD COLUMN is_subscription INTEGER DEFAULT 0',
+    'ALTER TABLE bills ADD COLUMN service_url TEXT',
+    'ALTER TABLE bills ADD COLUMN last_used TEXT',
+    'ALTER TABLE bills ADD COLUMN usage_rating INTEGER',
   ];
   for (const sql of alterStatements) {
     try {
@@ -56,6 +60,16 @@ function createIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_fuel_logs_vehicle ON fuel_logs(vehicle_id);
     CREATE INDEX IF NOT EXISTS idx_maintenance_vehicle ON maintenance_logs(vehicle_id);
     CREATE INDEX IF NOT EXISTS idx_interactions_contact ON contact_interactions(contact_id);
+    CREATE INDEX IF NOT EXISTS idx_sleep_logs_date ON sleep_logs(date);
+    CREATE INDEX IF NOT EXISTS idx_wishlist_purchased ON wishlist_items(purchased);
+    CREATE INDEX IF NOT EXISTS idx_pods_wishlist ON savings_pods(wishlist_item_id);
+    CREATE INDEX IF NOT EXISTS idx_pod_contributions_pod ON pod_contributions(pod_id);
+    CREATE INDEX IF NOT EXISTS idx_bills_subscription ON bills(is_subscription);
+    CREATE INDEX IF NOT EXISTS idx_inventory_warranty_expiry ON inventory_items(warranty_expiry);
+    CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category);
+    CREATE INDEX IF NOT EXISTS idx_warranty_claims_item ON warranty_claims(inventory_item_id);
+    CREATE INDEX IF NOT EXISTS idx_important_dates_date ON important_dates(date);
+    CREATE INDEX IF NOT EXISTS idx_important_dates_type ON important_dates(type);
   `);
 }
 
@@ -259,6 +273,53 @@ function createModuleTables(db) {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS sleep_logs (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL UNIQUE,
+      bedtime TEXT,
+      wake_time TEXT,
+      duration_hours REAL,
+      quality INTEGER,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS wishlist_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      target_price REAL,
+      current_price REAL,
+      priority TEXT DEFAULT 'medium',
+      url TEXT,
+      category TEXT,
+      notes TEXT,
+      purchased INTEGER DEFAULT 0,
+      purchased_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS savings_pods (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      target_amount REAL NOT NULL,
+      current_amount REAL DEFAULT 0,
+      wishlist_item_id TEXT,
+      icon TEXT DEFAULT '🎯',
+      color TEXT DEFAULT '#6366f1',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (wishlist_item_id) REFERENCES wishlist_items(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS pod_contributions (
+      id TEXT PRIMARY KEY,
+      pod_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      note TEXT,
+      date TEXT NOT NULL DEFAULT (date('now')),
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (pod_id) REFERENCES savings_pods(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS vehicles (
       id TEXT PRIMARY KEY,
       make TEXT NOT NULL,
@@ -293,6 +354,57 @@ function createModuleTables(db) {
       date TEXT NOT NULL DEFAULT (date('now')),
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      manufacturer TEXT,
+      model TEXT,
+      serial_number TEXT,
+      purchase_date TEXT,
+      purchase_price REAL,
+      warranty_expiry TEXT,
+      warranty_type TEXT DEFAULT 'standard',
+      warranty_provider TEXT,
+      coverage_details TEXT,
+      receipt_document_id TEXT,
+      category TEXT DEFAULT 'other',
+      location TEXT,
+      notes TEXT,
+      status TEXT DEFAULT 'active',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (receipt_document_id) REFERENCES documents(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS warranty_claims (
+      id TEXT PRIMARY KEY,
+      inventory_item_id TEXT NOT NULL,
+      claim_date TEXT NOT NULL DEFAULT (date('now')),
+      description TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      resolution TEXT,
+      cost REAL DEFAULT 0,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS important_dates (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'other',
+      description TEXT,
+      recurring TEXT,
+      reminder_days_before INTEGER DEFAULT 7,
+      contact_id TEXT,
+      tags TEXT,
+      notify INTEGER DEFAULT 1,
+      last_notified TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS comfyui_workflows (
