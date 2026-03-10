@@ -8,6 +8,13 @@ import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 import { buildAnalysisPrompt } from '@/lib/prompts/analysis-prompt';
 import { processAnalysis, getAvailableModules, parseAnalysisResponse } from '@/lib/analysis/process-analysis';
+import { getSettingValue } from '@/lib/utils/format';
+
+const DEFAULT_MODEL = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
+
+function getMainModel(db, overrideModel) {
+  return overrideModel || getSettingValue(db, 'main_model', DEFAULT_MODEL);
+}
 
 export async function POST(request) {
   try {
@@ -65,12 +72,7 @@ export async function POST(request) {
 
         const analysisPrompt = buildAnalysisPrompt(availableModules, activeClusterNames, recentModulesUsed);
 
-        // Read the main model from settings
-        let analysisModel = model;
-        if (!analysisModel) {
-          const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
-          try { analysisModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'); } catch { analysisModel = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'; }
-        }
+        const analysisModel = getMainModel(db, model);
 
         // Non-streaming analysis call with low reasoning + timeout
         const analysisResponse = await Promise.race([
@@ -162,12 +164,7 @@ export async function POST(request) {
       { role: 'system', content: systemPrompt },
       ...history,
     ];
-    // Read default model from settings, fall back to env var
-    let mainModel = model;
-    if (!mainModel) {
-      const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
-      try { mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'); } catch { mainModel = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'; }
-    }
+    const mainModel = getMainModel(db, model);
 
     const { stream, send, close, error: streamError } = createSSEStream();
 
@@ -350,11 +347,7 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
 
 function createConversation(db, model, projectId, systemPromptOverride) {
   const id = uuidv4();
-  let mainModel = model;
-  if (!mainModel) {
-    const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
-    try { mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'); } catch { mainModel = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b'; }
-  }
+  const mainModel = getMainModel(db, model);
   db.prepare('INSERT INTO conversations (id, title, model, project_id, system_prompt_override, created_at, updated_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))').run(id, 'New Chat', mainModel, projectId || null, systemPromptOverride || null);
   return id;
 }

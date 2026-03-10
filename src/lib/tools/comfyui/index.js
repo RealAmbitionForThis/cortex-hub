@@ -2,6 +2,7 @@ import { getDb } from '@/lib/db';
 import { v4 as uuid } from 'uuid';
 import { applyParameters, extractParameters } from '@/lib/comfyui/workflow-manager';
 import { queueWorkflow } from '@/lib/comfyui/client';
+import { parseTags, parseJsonSafe } from '@/lib/utils/format';
 
 export const comfyuiTools = [
   {
@@ -14,7 +15,7 @@ export const comfyuiTools = [
       return {
         workflows: rows.map((r) => ({
           ...r,
-          tags: (() => { try { return r.tags ? JSON.parse(r.tags) : []; } catch { return []; } })(),
+          tags: parseTags(r.tags),
         })),
       };
     },
@@ -84,8 +85,7 @@ export const comfyuiTools = [
       const workflow = db.prepare('SELECT name, parameters, workflow_json FROM comfyui_workflows WHERE id = ?').get(workflow_id);
       if (!workflow) return { error: 'Workflow not found' };
 
-      let parameters = [];
-      try { parameters = workflow.parameters ? JSON.parse(workflow.parameters) : []; } catch { /* malformed parameters JSON */ }
+      let parameters = parseJsonSafe(workflow.parameters, []);
       if (parameters.length === 0 && workflow.workflow_json) {
         try { parameters = extractParameters(JSON.parse(workflow.workflow_json)); } catch { /* malformed workflow JSON */ }
       }

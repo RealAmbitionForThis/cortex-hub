@@ -1,15 +1,6 @@
 import { success, error, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-
-function parseWorkflow(row) {
-  const safeParse = (str, fallback) => { try { return str ? JSON.parse(str) : fallback; } catch { return fallback; } };
-  return {
-    ...row,
-    workflow_json: safeParse(row.workflow_json, null),
-    parameters: safeParse(row.parameters, []),
-    tags: safeParse(row.tags, []),
-  };
-}
+import { parseWorkflow } from '@/lib/comfyui/parse';
 
 export async function GET(request, { params }) {
   try {

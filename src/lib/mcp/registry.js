@@ -1,12 +1,13 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuid } from 'uuid';
+import { parseJsonSafe } from '@/lib/utils/format';
 
 export function getMcpServers() {
   const db = getDb();
   return db.prepare('SELECT * FROM mcp_servers ORDER BY name ASC').all().map(s => ({
     ...s,
     enabled: Boolean(s.enabled),
-    config: (() => { try { return s.config ? JSON.parse(s.config) : {}; } catch { return {}; } })(),
+    config: parseJsonSafe(s.config, {}),
   }));
 }
 

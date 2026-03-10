@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { parseTags } from '@/lib/utils/format';
 
 export function addImportantDate({ title, date, type, description, recurring, reminder_days_before, contact_id, tags, notify }) {
   const id = uuidv4();
@@ -25,15 +26,13 @@ export function getImportantDates({ type, upcoming_days, past } = {}) {
   }
   query += ' ORDER BY date ASC';
   return getDb().prepare(query).all(...params).map(d => {
-    let tags = [];
-    if (d.tags) { try { tags = JSON.parse(d.tags); } catch { /* malformed tags */ } }
-    return { ...d, tags };
+    return { ...d, tags: parseTags(d.tags) };
   });
 }
 
 export function getImportantDate(id) {
   const d = getDb().prepare('SELECT * FROM important_dates WHERE id = ?').get(id);
-  if (d && d.tags) { try { d.tags = JSON.parse(d.tags); } catch { d.tags = []; } }
+  if (d) d.tags = parseTags(d.tags);
   return d;
 }
 
@@ -116,8 +115,6 @@ export function getTimeline(year) {
   }
   query += ' ORDER BY date ASC';
   return getDb().prepare(query).all(...params).map(d => {
-    let tags = [];
-    if (d.tags) { try { tags = JSON.parse(d.tags); } catch { /* malformed tags */ } }
-    return { ...d, tags };
+    return { ...d, tags: parseTags(d.tags) };
   });
 }

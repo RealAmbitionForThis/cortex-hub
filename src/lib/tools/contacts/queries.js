@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuid } from 'uuid';
+import { parseTags } from '@/lib/utils/format';
 
 export function addContact({ name, email, phone, company, role, notes, birthday, tags }) {
   const db = getDb();
@@ -91,9 +92,5 @@ export function getUpcomingFollowups() {
 }
 
 function parseContact(row) {
-  let tags = [];
-  if (row.tags) {
-    try { tags = JSON.parse(row.tags); } catch { console.error('[contacts] Malformed tags JSON for contact', row.id); }
-  }
-  return { ...row, tags };
+  return { ...row, tags: parseTags(row.tags) };
 }

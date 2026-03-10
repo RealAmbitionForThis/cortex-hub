@@ -1,5 +1,6 @@
 import { scheduleJob } from './cron';
 import { getDb } from '@/lib/db';
+import { parseJsonSafe } from '@/lib/utils/format';
 
 export function initializeBuiltInJobs() {
   // Memory analyzer — every 6 hours
@@ -102,7 +103,7 @@ export function loadCustomSchedules() {
       scheduleJob(`custom-${schedule.id}`, schedule.cron_expression, async () => {
         try {
           const { executeTool } = await import('@/lib/tools/registry');
-          const params = (() => { try { return JSON.parse(schedule.params || '{}'); } catch { return {}; } })();
+          const params = parseJsonSafe(schedule.params, {});
           await executeTool(schedule.action, params);
         } catch (e) { console.error(`[scheduler] custom-${schedule.id} job failed:`, e.message); }
       });

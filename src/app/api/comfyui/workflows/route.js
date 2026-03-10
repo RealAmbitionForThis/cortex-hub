@@ -2,16 +2,7 @@ import { success, error, badRequest } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuid } from 'uuid';
 import { extractParameters } from '@/lib/comfyui/workflow-manager';
-
-function parseWorkflow(row) {
-  const safeParse = (str, fallback) => { try { return str ? JSON.parse(str) : fallback; } catch { return fallback; } };
-  return {
-    ...row,
-    workflow_json: safeParse(row.workflow_json, null),
-    parameters: safeParse(row.parameters, []),
-    tags: safeParse(row.tags, []),
-  };
-}
+import { parseWorkflow } from '@/lib/comfyui/parse';
 
 export async function GET() {
   try {

@@ -1,5 +1,10 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuid } from 'uuid';
+import { parseJsonSafe } from '@/lib/utils/format';
+
+function parseMetadata(jsonStr) {
+  return parseJsonSafe(jsonStr, {});
+}
 
 export function addDocument({ title, type, content, file_path, metadata }) {
   const db = getDb();
@@ -19,20 +24,14 @@ export function getDocuments({ type, search } = {}) {
   if (type) { query += ' AND type = ?'; params.push(type); }
   if (search) { query += ' AND (title LIKE ? OR content LIKE ?)'; const s = `%${search}%`; params.push(s, s); }
   query += ' ORDER BY created_at DESC';
-  return db.prepare(query).all(...params).map(d => {
-    let metadata = {};
-    if (d.metadata) { try { metadata = JSON.parse(d.metadata); } catch { console.error('[docs] Malformed metadata JSON for doc', d.id); } }
-    return { ...d, metadata };
-  });
+  return db.prepare(query).all(...params).map(d => ({ ...d, metadata: parseMetadata(d.metadata) }));
 }
 
 export function getDocumentById(id) {
   const db = getDb();
   const row = db.prepare('SELECT * FROM documents WHERE id = ?').get(id);
   if (!row) return null;
-  let metadata = {};
-  if (row.metadata) { try { metadata = JSON.parse(row.metadata); } catch { console.error('[docs] Malformed metadata JSON for doc', row.id); } }
-  return { ...row, metadata };
+  return { ...row, metadata: parseMetadata(row.metadata) };
 }
 
 export function deleteDocument(id) {
