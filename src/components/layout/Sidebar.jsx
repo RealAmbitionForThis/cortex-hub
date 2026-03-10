@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Brain, Plus, DollarSign, Heart, Car, Users, CheckSquare,
-  FileText, Database, Download, Paintbrush,
+  FileText, Database, Download, Paintbrush, FolderOpen,
   ChevronDown, ChevronRight, Settings, Pin, MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ const NAV_GROUPS = [
   {
     label: 'Productivity',
     items: [
+      { href: '/projects', icon: FolderOpen, label: 'Projects' },
       { href: '/contacts', icon: Users, label: 'Contacts' },
       { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
       { href: '/documents', icon: FileText, label: 'Documents' },

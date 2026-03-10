@@ -42,6 +42,16 @@ export async function listModels() {
   return data.models || [];
 }
 
+export async function showModel(modelName) {
+  const res = await fetch(`${OLLAMA_URL}/api/show`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: modelName }),
+  });
+  if (!res.ok) throw new Error(`Show model error: ${res.status}`);
+  return res.json();
+}
+
 export async function checkConnection() {
   try {
     const res = await fetch(`${OLLAMA_URL}/api/tags`);
