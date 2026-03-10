@@ -1,7 +1,7 @@
 import { success, error, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 
-const ALLOWED_FIELDS = ['title', 'pinned', 'model'];
+const ALLOWED_FIELDS = ['title', 'pinned', 'model', 'project_id', 'system_prompt_override'];
 
 export async function GET(request, { params }) {
   try {

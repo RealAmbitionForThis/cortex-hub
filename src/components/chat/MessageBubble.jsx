@@ -3,15 +3,16 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { StreamingText } from './StreamingText';
-import { MessageToolbar } from './MessageToolbar';
 import { ToolCallDisplay } from './ToolCallDisplay';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Copy, Check } from 'lucide-react';
 
 export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
+  const [copied, setCopied] = useState(false);
 
   if (message.role === 'tool') {
     return (
@@ -28,6 +29,8 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
 
   function handleCopy() {
     navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   function handleSaveEdit() {
@@ -42,10 +45,18 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
 
   return (
     <div className={cn('group flex gap-3 py-2', isUser ? 'justify-end' : 'justify-start')}>
-      <div className={cn('max-w-[85%] lg:max-w-[70%] rounded-lg px-4 py-3', isUser ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-        {message.edited && <Badge variant="outline" className="mb-1 text-[10px]">edited</Badge>}
-        {message.reasoning_level && message.reasoning_level !== 'medium' && (
-          <Badge variant="secondary" className="mb-1 text-[10px] mr-1">{message.reasoning_level}</Badge>
+      <div className={cn(
+        'relative max-w-[85%] lg:max-w-[70%] rounded-lg px-4 py-3',
+        isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
+      )}>
+        {/* Info badges - only show when relevant */}
+        {(message.edited || (message.reasoning_level && message.reasoning_level !== 'medium')) && (
+          <div className="flex gap-1 mb-1.5">
+            {message.edited ? <Badge variant="outline" className="text-[10px] py-0 h-4">edited</Badge> : null}
+            {message.reasoning_level && message.reasoning_level !== 'medium' ? (
+              <Badge variant="secondary" className="text-[10px] py-0 h-4">{message.reasoning_level}</Badge>
+            ) : null}
+          </div>
         )}
 
         {editing ? (
@@ -57,19 +68,20 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
             </div>
           </div>
         ) : (
-          <StreamingText content={message.content} isStreaming={message.streaming} />
+          <StreamingText content={message.content} isStreaming={message.streaming} isUser={isUser} />
         )}
 
-        {!editing && !message.streaming && (
-          <div className="mt-1">
-            <MessageToolbar
-              message={message}
-              onEdit={() => setEditing(true)}
-              onDelete={() => onDelete(message.id)}
-              onCopy={handleCopy}
-              onRegenerate={() => onRegenerate(message.id)}
-            />
-          </div>
+        {/* Copy button - always visible on right side */}
+        {!editing && !message.streaming && message.content && (
+          <button
+            onClick={handleCopy}
+            className={cn(
+              'absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
+              isUser ? 'hover:bg-primary-foreground/20' : 'hover:bg-accent'
+            )}
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
         )}
       </div>
     </div>

@@ -6,8 +6,18 @@ const REASONING_INSTRUCTIONS = {
   [REASONING_LEVELS.HIGH]: 'Think deeply. Analyze thoroughly. Consider edge cases.',
 };
 
-export function buildSystemPrompt({ reasoningLevel = 'medium', memories = [], clusters = [], clusterMemories = [], tools = [] }) {
+export function buildSystemPrompt({ reasoningLevel = 'medium', memories = [], clusters = [], clusterMemories = [], tools = [], projectPrompt, chatPromptOverride }) {
   const parts = [buildCorePrompt(reasoningLevel)];
+
+  // Project-level system prompt
+  if (projectPrompt) {
+    parts.push(`## Project Instructions\n${projectPrompt}`);
+  }
+
+  // Per-chat system prompt override (takes highest priority)
+  if (chatPromptOverride) {
+    parts.push(`## Chat-Specific Instructions\n${chatPromptOverride}`);
+  }
 
   if (memories.length) {
     parts.push(buildMemorySection(memories));

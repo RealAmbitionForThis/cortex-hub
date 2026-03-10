@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 
 export function useChat() {
   const [messages, setMessages] = useState([]);
   const [streaming, setStreaming] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [conversationMeta, setConversationMeta] = useState(null);
   const abortRef = useRef(null);
 
   const loadConversation = useCallback(async (id) => {
@@ -15,23 +17,56 @@ export function useChat() {
         const data = await res.json();
         setMessages(data.messages || []);
         setConversationId(id);
+        setConversationMeta(data.conversation || null);
       }
     } catch {
-      // ignore
+      toast.error('Failed to load conversation');
     }
   }, []);
 
-  const sendMessage = useCallback(async ({ message, model, reasoningLevel }) => {
+  const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, temperature, contextWindow }) => {
     setStreaming(true);
 
-    const userMsg = { id: crypto.randomUUID(), role: 'user', content: message, reasoning_level: reasoningLevel };
+    const userMsg = { id: crypto.randomUUID(), role: 'user', content: message };
     setMessages((prev) => [...prev, userMsg]);
 
     try {
+      // Upload attachments first if any
+      let attachmentTexts = [];
+      if (attachments && attachments.length > 0) {
+        for (const file of attachments) {
+          const formData = new FormData();
+          formData.append('files', file);
+          formData.append('category', 'chat');
+          await fetch('/api/upload', { method: 'POST', body: formData }).catch(() => {});
+          // For text files, read content to include in message
+          if (file.type.startsWith('text/') || file.name.match(/\.(txt|md|csv|json)$/i)) {
+            try {
+              const text = await file.text();
+              attachmentTexts.push(`[File: ${file.name}]\n${text}`);
+            } catch { /* skip */ }
+          } else {
+            attachmentTexts.push(`[Attached file: ${file.name} (${file.type})]`);
+          }
+        }
+      }
+
+      const fullMessage = attachmentTexts.length > 0
+        ? `${message}\n\n---\n${attachmentTexts.join('\n\n')}`
+        : message;
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId, message, model, reasoningLevel }),
+        body: JSON.stringify({
+          conversationId,
+          message: fullMessage,
+          model,
+          reasoningLevel,
+          enabledTools,
+          temperature,
+          contextWindow,
+        }),
       });
 
       if (!res.ok) throw new Error('Chat request failed');
@@ -97,6 +132,7 @@ export function useChat() {
       );
     } catch {
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Failed to get response. Is Ollama running?', error: true }]);
+      toast.error('Failed to get response');
     } finally {
       setStreaming(false);
     }
@@ -111,9 +147,10 @@ export function useChat() {
       });
       if (res.ok && conversationId) {
         await loadConversation(conversationId);
+        toast.success('Message updated');
       }
     } catch {
-      // Network error
+      toast.error('Failed to edit message');
     }
   }, [conversationId, loadConversation]);
 
@@ -126,9 +163,10 @@ export function useChat() {
       });
       if (res.ok && conversationId) {
         await loadConversation(conversationId);
+        toast.success('Message deleted');
       }
     } catch {
-      // Network error
+      toast.error('Failed to delete message');
     }
   }, [conversationId, loadConversation]);
 
@@ -150,17 +188,18 @@ export function useChat() {
         }
       }
     } catch {
-      // Network error
+      toast.error('Failed to regenerate');
     }
   }, [messages, loadConversation, sendMessage]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    setConversationMeta(null);
   }, []);
 
   return {
-    messages, streaming, conversationId,
+    messages, streaming, conversationId, conversationMeta,
     sendMessage, editMessage, deleteMessage, regenerate,
     loadConversation, clearChat, setConversationId,
   };

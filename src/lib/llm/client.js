@@ -1,8 +1,9 @@
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
-export async function chatCompletion({ model, messages, tools, stream = false }) {
+export async function chatCompletion({ model, messages, tools, stream = false, options = {} }) {
   const body = { model, messages, stream };
   if (tools?.length) body.tools = tools;
+  if (Object.keys(options).length > 0) body.options = options;
 
   const res = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: 'POST',

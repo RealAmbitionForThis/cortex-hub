@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Plus, Car, Wrench, Fuel } from 'lucide-react';
+import { Plus, Car, Wrench, Fuel, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/format';
 import { MAINTENANCE_TYPES } from '@/lib/constants';
 
@@ -23,9 +23,11 @@ export default function VehiclePage() {
   const [costs, setCosts] = useState({ maintenance: 0, fuel: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [showEditVehicle, setShowEditVehicle] = useState(false);
   const [showAddMaint, setShowAddMaint] = useState(false);
   const [showAddFuel, setShowAddFuel] = useState(false);
   const [vehicleForm, setVehicleForm] = useState({ make: '', model: '', year: '', current_mileage: '', nickname: '' });
+  const [editForm, setEditForm] = useState({ id: '', make: '', model: '', year: '', current_mileage: '', nickname: '' });
   const [maintForm, setMaintForm] = useState({ type: 'oil_change', description: '', cost: '', mileage: '' });
   const [fuelForm, setFuelForm] = useState({ gallons: '', cost_per_gallon: '', total_cost: '', mileage: '' });
 
@@ -36,10 +38,8 @@ export default function VehiclePage() {
     setLoading(true);
     try {
       const res = await fetch('/api/vehicle');
-      if (res.ok) { const d = await res.json(); setVehicles(d.vehicles || []); if (d.vehicles?.length) setSelectedVehicle(d.vehicles[0].id); }
-    } catch (err) {
-      toast.error('Failed to load vehicles');
-    }
+      if (res.ok) { const d = await res.json(); setVehicles(d.vehicles || []); if (d.vehicles?.length && !selectedVehicle) setSelectedVehicle(d.vehicles[0].id); }
+    } catch { toast.error('Failed to load vehicles'); }
     setLoading(false);
   }
 
@@ -59,45 +59,58 @@ export default function VehiclePage() {
         setShowAddVehicle(false);
         setVehicleForm({ make: '', model: '', year: '', current_mileage: '', nickname: '' });
         fetchVehicles();
-      } else {
-        const data = await res.json();
-        toast.error(data.error || 'Failed to add vehicle');
-      }
-    } catch {
-      toast.error('Failed to add vehicle');
-    }
+      } else { const d = await res.json(); toast.error(d.error || 'Failed to add vehicle'); }
+    } catch { toast.error('Failed to add vehicle'); }
+  }
+
+  function openEditVehicle() {
+    const v = vehicles.find(v => v.id === selectedVehicle);
+    if (!v) return;
+    setEditForm({ id: v.id, make: v.make, model: v.model, year: String(v.year), current_mileage: String(v.current_mileage || ''), nickname: v.nickname || '' });
+    setShowEditVehicle(true);
+  }
+
+  async function handleEditVehicle() {
+    try {
+      const res = await fetch('/api/vehicle', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...editForm, year: parseInt(editForm.year), current_mileage: parseInt(editForm.current_mileage) || null }),
+      });
+      if (res.ok) {
+        toast.success('Vehicle updated');
+        setShowEditVehicle(false);
+        fetchVehicles();
+      } else { toast.error('Failed to update vehicle'); }
+    } catch { toast.error('Failed to update vehicle'); }
+  }
+
+  async function handleDeleteVehicle() {
+    if (!selectedVehicle) return;
+    try {
+      const res = await fetch(`/api/vehicle?id=${selectedVehicle}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Vehicle deleted');
+        setSelectedVehicle(null);
+        fetchVehicles();
+      } else { toast.error('Failed to delete vehicle'); }
+    } catch { toast.error('Failed to delete vehicle'); }
   }
 
   async function handleAddMaintenance() {
     try {
       const res = await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...maintForm, action: 'maintenance', vehicle_id: selectedVehicle, cost: parseFloat(maintForm.cost) || undefined, mileage: parseInt(maintForm.mileage) || undefined }) });
-      if (res.ok) {
-        toast.success('Maintenance logged');
-        setShowAddMaint(false);
-        setMaintForm({ type: 'oil_change', description: '', cost: '', mileage: '' });
-        fetchVehicleData(selectedVehicle);
-      } else {
-        toast.error('Failed to log maintenance');
-      }
-    } catch {
-      toast.error('Failed to log maintenance');
-    }
+      if (res.ok) { toast.success('Maintenance logged'); setShowAddMaint(false); setMaintForm({ type: 'oil_change', description: '', cost: '', mileage: '' }); fetchVehicleData(selectedVehicle); }
+      else { toast.error('Failed to log maintenance'); }
+    } catch { toast.error('Failed to log maintenance'); }
   }
 
   async function handleAddFuel() {
     try {
       const res = await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fuelForm, action: 'fuel', vehicle_id: selectedVehicle, gallons: parseFloat(fuelForm.gallons), cost_per_gallon: parseFloat(fuelForm.cost_per_gallon) || undefined, total_cost: parseFloat(fuelForm.total_cost) || undefined, mileage: parseInt(fuelForm.mileage) || undefined }) });
-      if (res.ok) {
-        toast.success('Fuel logged');
-        setShowAddFuel(false);
-        setFuelForm({ gallons: '', cost_per_gallon: '', total_cost: '', mileage: '' });
-        fetchVehicleData(selectedVehicle);
-      } else {
-        toast.error('Failed to log fuel');
-      }
-    } catch {
-      toast.error('Failed to log fuel');
-    }
+      if (res.ok) { toast.success('Fuel logged'); setShowAddFuel(false); setFuelForm({ gallons: '', cost_per_gallon: '', total_cost: '', mileage: '' }); fetchVehicleData(selectedVehicle); }
+      else { toast.error('Failed to log fuel'); }
+    } catch { toast.error('Failed to log fuel'); }
   }
 
   if (loading) return <AppShell title="Vehicle"><LoadingSpinner /></AppShell>;
@@ -111,6 +124,8 @@ export default function VehiclePage() {
           <Button onClick={() => setShowAddVehicle(true)}><Plus className="h-4 w-4 mr-2" /> Vehicle</Button>
           {selectedVehicle && <Button variant="outline" onClick={() => setShowAddMaint(true)}><Wrench className="h-4 w-4 mr-2" /> Maintenance</Button>}
           {selectedVehicle && <Button variant="outline" onClick={() => setShowAddFuel(true)}><Fuel className="h-4 w-4 mr-2" /> Fuel</Button>}
+          {selectedVehicle && <Button variant="outline" onClick={openEditVehicle}><Pencil className="h-4 w-4 mr-2" /> Edit</Button>}
+          {selectedVehicle && <Button variant="outline" className="text-destructive" onClick={handleDeleteVehicle}><Trash2 className="h-4 w-4 mr-2" /> Delete</Button>}
         </div>
 
         {vehicles.length === 0 ? (
@@ -118,7 +133,7 @@ export default function VehiclePage() {
         ) : (
           <>
             {vehicles.length > 1 && (
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {vehicles.map(v => (
                   <Button key={v.id} variant={selectedVehicle === v.id ? 'default' : 'outline'} size="sm" onClick={() => setSelectedVehicle(v.id)}>
                     {v.nickname || `${v.year} ${v.make} ${v.model}`}
@@ -131,7 +146,7 @@ export default function VehiclePage() {
               <Card>
                 <CardContent className="p-4">
                   <h3 className="font-bold text-lg">{vehicle.nickname || `${vehicle.year} ${vehicle.make} ${vehicle.model}`}</h3>
-                  <p className="text-sm text-muted-foreground">{vehicle.year} {vehicle.make} {vehicle.model} {vehicle.current_mileage ? `• ${vehicle.current_mileage.toLocaleString()} mi` : ''}</p>
+                  <p className="text-sm text-muted-foreground">{vehicle.year} {vehicle.make} {vehicle.model} {vehicle.current_mileage ? `\u2022 ${vehicle.current_mileage.toLocaleString()} mi` : ''}</p>
                 </CardContent>
               </Card>
             )}
@@ -147,7 +162,7 @@ export default function VehiclePage() {
               <CardContent className="space-y-2">
                 {maintenance.length === 0 ? <p className="text-sm text-muted-foreground">No maintenance records</p> : maintenance.map(m => (
                   <div key={m.id} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
-                    <div><span className="font-medium capitalize">{m.type.replace('_', ' ')}</span>{m.description && <span className="text-muted-foreground"> — {m.description}</span>}</div>
+                    <div><span className="font-medium capitalize">{m.type.replace('_', ' ')}</span>{m.description && <span className="text-muted-foreground"> \u2014 {m.description}</span>}</div>
                     <div className="text-right"><span>{m.date}</span>{m.cost && <span className="ml-2">{formatCurrency(m.cost)}</span>}</div>
                   </div>
                 ))}
@@ -156,6 +171,7 @@ export default function VehiclePage() {
           </>
         )}
 
+        {/* Add Vehicle */}
         <Dialog open={showAddVehicle} onOpenChange={setShowAddVehicle}>
           <DialogContent><DialogHeader><DialogTitle>Add Vehicle</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -169,6 +185,21 @@ export default function VehiclePage() {
           </DialogContent>
         </Dialog>
 
+        {/* Edit Vehicle */}
+        <Dialog open={showEditVehicle} onOpenChange={setShowEditVehicle}>
+          <DialogContent><DialogHeader><DialogTitle>Edit Vehicle</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div><Label>Make</Label><Input value={editForm.make} onChange={e => setEditForm({...editForm, make: e.target.value})} /></div>
+              <div><Label>Model</Label><Input value={editForm.model} onChange={e => setEditForm({...editForm, model: e.target.value})} /></div>
+              <div><Label>Year</Label><Input type="number" value={editForm.year} onChange={e => setEditForm({...editForm, year: e.target.value})} /></div>
+              <div><Label>Current Mileage</Label><Input type="number" value={editForm.current_mileage} onChange={e => setEditForm({...editForm, current_mileage: e.target.value})} /></div>
+              <div><Label>Nickname</Label><Input value={editForm.nickname} onChange={e => setEditForm({...editForm, nickname: e.target.value})} /></div>
+            </div>
+            <DialogFooter><Button onClick={handleEditVehicle}>Save</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Log Maintenance */}
         <Dialog open={showAddMaint} onOpenChange={setShowAddMaint}>
           <DialogContent><DialogHeader><DialogTitle>Log Maintenance</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -181,6 +212,7 @@ export default function VehiclePage() {
           </DialogContent>
         </Dialog>
 
+        {/* Log Fuel */}
         <Dialog open={showAddFuel} onOpenChange={setShowAddFuel}>
           <DialogContent><DialogHeader><DialogTitle>Log Fuel</DialogTitle></DialogHeader>
             <div className="space-y-4">
