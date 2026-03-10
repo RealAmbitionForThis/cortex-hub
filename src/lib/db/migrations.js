@@ -65,6 +65,11 @@ function createIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_pods_wishlist ON savings_pods(wishlist_item_id);
     CREATE INDEX IF NOT EXISTS idx_pod_contributions_pod ON pod_contributions(pod_id);
     CREATE INDEX IF NOT EXISTS idx_bills_subscription ON bills(is_subscription);
+    CREATE INDEX IF NOT EXISTS idx_inventory_warranty_expiry ON inventory_items(warranty_expiry);
+    CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category);
+    CREATE INDEX IF NOT EXISTS idx_warranty_claims_item ON warranty_claims(inventory_item_id);
+    CREATE INDEX IF NOT EXISTS idx_important_dates_date ON important_dates(date);
+    CREATE INDEX IF NOT EXISTS idx_important_dates_type ON important_dates(type);
   `);
 }
 
@@ -349,6 +354,57 @@ function createModuleTables(db) {
       date TEXT NOT NULL DEFAULT (date('now')),
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      manufacturer TEXT,
+      model TEXT,
+      serial_number TEXT,
+      purchase_date TEXT,
+      purchase_price REAL,
+      warranty_expiry TEXT,
+      warranty_type TEXT DEFAULT 'standard',
+      warranty_provider TEXT,
+      coverage_details TEXT,
+      receipt_document_id TEXT,
+      category TEXT DEFAULT 'other',
+      location TEXT,
+      notes TEXT,
+      status TEXT DEFAULT 'active',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (receipt_document_id) REFERENCES documents(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS warranty_claims (
+      id TEXT PRIMARY KEY,
+      inventory_item_id TEXT NOT NULL,
+      claim_date TEXT NOT NULL DEFAULT (date('now')),
+      description TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      resolution TEXT,
+      cost REAL DEFAULT 0,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS important_dates (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'other',
+      description TEXT,
+      recurring TEXT,
+      reminder_days_before INTEGER DEFAULT 7,
+      contact_id TEXT,
+      tags TEXT,
+      notify INTEGER DEFAULT 1,
+      last_notified TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS comfyui_workflows (

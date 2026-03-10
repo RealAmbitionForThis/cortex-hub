@@ -12,6 +12,8 @@ import { exportTools } from './export/index';
 import { scheduleTools } from './schedule/index';
 import { calcTools } from './calc/index';
 import { comfyuiTools } from './comfyui/index';
+import { inventoryTools } from './inventory/index';
+import { dateTools } from './dates/index';
 
 const toolRegistry = new Map();
 
@@ -101,6 +103,8 @@ export function initializeTools() {
   registerTools(scheduleTools);
   registerTools(calcTools);
   registerTools(comfyuiTools);
+  registerTools(inventoryTools);
+  registerTools(dateTools);
 }
 
 // Auto-initialize

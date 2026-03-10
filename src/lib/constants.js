@@ -35,6 +35,8 @@ export const MODULES = {
   CONTACTS: 'contacts',
   TASKS: 'tasks',
   DOCS: 'docs',
+  INVENTORY: 'inventory',
+  DATES: 'dates',
   GENERAL: 'general',
 };
 
@@ -171,4 +173,49 @@ export const WISHLIST_PRIORITIES = [
   'low',
   'medium',
   'high',
+];
+
+export const INVENTORY_CATEGORIES = [
+  'electronics',
+  'appliances',
+  'furniture',
+  'vehicle',
+  'tools',
+  'clothing',
+  'jewelry',
+  'sports',
+  'musical',
+  'other',
+];
+
+export const WARRANTY_TYPES = [
+  'standard',
+  'extended',
+  'accidental',
+  'lifetime',
+  'limited',
+];
+
+export const WARRANTY_CLAIM_STATUSES = [
+  'pending',
+  'submitted',
+  'approved',
+  'denied',
+  'resolved',
+];
+
+export const IMPORTANT_DATE_TYPES = [
+  'passport_expiry',
+  'license_expiry',
+  'lease_renewal',
+  'car_registration',
+  'insurance_renewal',
+  'visa_expiry',
+  'subscription_renewal',
+  'anniversary',
+  'birthday',
+  'appointment',
+  'deadline',
+  'milestone',
+  'other',
 ];

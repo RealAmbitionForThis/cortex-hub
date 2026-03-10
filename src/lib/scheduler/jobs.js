@@ -35,6 +35,43 @@ export function initializeBuiltInJobs() {
     } catch {}
   });
 
+  // Important dates reminder — 8 AM daily
+  scheduleJob('important-dates-check', '0 8 * * *', async () => {
+    try {
+      const { getUpcomingReminders, markNotified } = await import('@/lib/tools/dates/queries');
+      const reminders = getUpcomingReminders();
+      if (reminders.length > 0) {
+        const { sendNotification } = await import('@/lib/notify/ntfy');
+        for (const r of reminders) {
+          await sendNotification({
+            title: `Upcoming: ${r.title}`,
+            message: `${r.type.replace(/_/g, ' ')} on ${r.date} (${r.days_until} day${r.days_until !== 1 ? 's' : ''} away)${r.description ? ` — ${r.description}` : ''}`,
+            priority: r.days_until <= 3 ? 4 : 3,
+            tags: ['calendar'],
+          });
+          markNotified(r.id);
+        }
+      }
+    } catch {}
+  });
+
+  // Warranty expiry check — 9 AM on Mondays
+  scheduleJob('warranty-check', '0 9 * * 1', async () => {
+    try {
+      const { getExpiringWarranties } = await import('@/lib/tools/inventory/queries');
+      const expiring = getExpiringWarranties(30);
+      if (expiring.length > 0) {
+        const { sendNotification } = await import('@/lib/notify/ntfy');
+        await sendNotification({
+          title: `${expiring.length} Warranty Expir${expiring.length === 1 ? 'y' : 'ies'} Soon`,
+          message: expiring.map(i => `${i.name}: expires ${i.warranty_expiry}`).join(', '),
+          priority: 3,
+          tags: ['shield'],
+        });
+      }
+    } catch {}
+  });
+
   // Task overdue check — 10 AM daily
   scheduleJob('task-overdue', '0 10 * * *', async () => {
     try {
