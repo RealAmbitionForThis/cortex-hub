@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from './Sidebar';
-import { MobileSidebar } from './MobileSidebar';
 import { TopBar } from './TopBar';
 
 export function AppShell({ children, title }) {
@@ -41,12 +40,6 @@ export function AppShell({ children, title }) {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        onNewChat={handleNewChat}
-        onSelectConversation={handleSelectConversation}
-      />
-      <MobileSidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
         conversations={conversations}

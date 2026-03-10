@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { AppShell } from '@/components/layout/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,8 +34,12 @@ export default function VehiclePage() {
 
   async function fetchVehicles() {
     setLoading(true);
-    const res = await fetch('/api/vehicle');
-    if (res.ok) { const d = await res.json(); setVehicles(d.vehicles || []); if (d.vehicles?.length) setSelectedVehicle(d.vehicles[0].id); }
+    try {
+      const res = await fetch('/api/vehicle');
+      if (res.ok) { const d = await res.json(); setVehicles(d.vehicles || []); if (d.vehicles?.length) setSelectedVehicle(d.vehicles[0].id); }
+    } catch (err) {
+      toast.error('Failed to load vehicles');
+    }
     setLoading(false);
   }
 
@@ -47,21 +52,52 @@ export default function VehiclePage() {
   }
 
   async function handleAddVehicle() {
-    await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...vehicleForm, year: parseInt(vehicleForm.year), current_mileage: parseInt(vehicleForm.current_mileage) || undefined }) });
-    setShowAddVehicle(false);
-    fetchVehicles();
+    try {
+      const res = await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...vehicleForm, year: parseInt(vehicleForm.year), current_mileage: parseInt(vehicleForm.current_mileage) || undefined }) });
+      if (res.ok) {
+        toast.success('Vehicle added');
+        setShowAddVehicle(false);
+        setVehicleForm({ make: '', model: '', year: '', current_mileage: '', nickname: '' });
+        fetchVehicles();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to add vehicle');
+      }
+    } catch {
+      toast.error('Failed to add vehicle');
+    }
   }
 
   async function handleAddMaintenance() {
-    await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...maintForm, action: 'maintenance', vehicle_id: selectedVehicle, cost: parseFloat(maintForm.cost) || undefined, mileage: parseInt(maintForm.mileage) || undefined }) });
-    setShowAddMaint(false);
-    fetchVehicleData(selectedVehicle);
+    try {
+      const res = await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...maintForm, action: 'maintenance', vehicle_id: selectedVehicle, cost: parseFloat(maintForm.cost) || undefined, mileage: parseInt(maintForm.mileage) || undefined }) });
+      if (res.ok) {
+        toast.success('Maintenance logged');
+        setShowAddMaint(false);
+        setMaintForm({ type: 'oil_change', description: '', cost: '', mileage: '' });
+        fetchVehicleData(selectedVehicle);
+      } else {
+        toast.error('Failed to log maintenance');
+      }
+    } catch {
+      toast.error('Failed to log maintenance');
+    }
   }
 
   async function handleAddFuel() {
-    await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fuelForm, action: 'fuel', vehicle_id: selectedVehicle, gallons: parseFloat(fuelForm.gallons), cost_per_gallon: parseFloat(fuelForm.cost_per_gallon) || undefined, total_cost: parseFloat(fuelForm.total_cost) || undefined, mileage: parseInt(fuelForm.mileage) || undefined }) });
-    setShowAddFuel(false);
-    fetchVehicleData(selectedVehicle);
+    try {
+      const res = await fetch('/api/vehicle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fuelForm, action: 'fuel', vehicle_id: selectedVehicle, gallons: parseFloat(fuelForm.gallons), cost_per_gallon: parseFloat(fuelForm.cost_per_gallon) || undefined, total_cost: parseFloat(fuelForm.total_cost) || undefined, mileage: parseInt(fuelForm.mileage) || undefined }) });
+      if (res.ok) {
+        toast.success('Fuel logged');
+        setShowAddFuel(false);
+        setFuelForm({ gallons: '', cost_per_gallon: '', total_cost: '', mileage: '' });
+        fetchVehicleData(selectedVehicle);
+      } else {
+        toast.error('Failed to log fuel');
+      }
+    } catch {
+      toast.error('Failed to log fuel');
+    }
   }
 
   if (loading) return <AppShell title="Vehicle"><LoadingSpinner /></AppShell>;

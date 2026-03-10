@@ -10,7 +10,7 @@ import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments } = body;
+    const { conversationId, message, model, reasoningLevel, attachments, enabledTools } = body;
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model);
@@ -18,11 +18,24 @@ export async function POST(request) {
 
     const memories = await retrieveRelevantMemories({ query: message });
     const activeClusters = getActiveClusters(db);
+
+    let tools = getToolDefinitions();
+
+    // Filter tools based on enabled toggles
+    if (enabledTools) {
+      if (enabledTools.tools === false) {
+        tools = [];
+      }
+      if (enabledTools.web_search === false) {
+        tools = tools.filter(t => !t.function?.name?.startsWith('search.'));
+      }
+    }
+
     const systemPrompt = buildSystemPrompt({
       reasoningLevel: reasoningLevel || 'medium',
       memories,
       clusters: activeClusters,
-      tools: getToolDefinitions(),
+      tools,
     });
 
     const history = getMessageHistory(db, convId);
@@ -30,9 +43,12 @@ export async function POST(request) {
       { role: 'system', content: systemPrompt },
       ...history,
     ];
-
-    const tools = getToolDefinitions();
-    const mainModel = model || process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
+    // Read default model from settings, fall back to env var
+    let mainModel = model;
+    if (!mainModel) {
+      const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
+      mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
+    }
 
     const { stream, send, close, error: streamError } = createSSEStream();
 
@@ -127,7 +143,11 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
 
 function createConversation(db, model) {
   const id = uuidv4();
-  const mainModel = model || process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
+  let mainModel = model;
+  if (!mainModel) {
+    const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
+    mainModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
+  }
   db.prepare('INSERT INTO conversations (id, title, model, created_at, updated_at) VALUES (?, ?, ?, datetime(\'now\'), datetime(\'now\'))').run(id, 'New Chat', mainModel);
   return id;
 }

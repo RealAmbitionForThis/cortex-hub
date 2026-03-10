@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { AppShell } from '@/components/layout/AppShell';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -26,11 +26,18 @@ export default function ComfyUIPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      fetch('/api/comfyui/workflows').then(r => r.json()).then(d => setWorkflows(d.workflows || [])).catch(() => {}),
-      fetch('/api/comfyui/generations').then(r => r.json()).then(d => setGenerations(d.generations || [])).catch(() => {}),
-      fetch('/api/comfyui/status').then(r => r.json()).then(d => setConnected(d.connected || false)).catch(() => {}),
-    ]);
+    try {
+      const [wfRes, genRes, statusRes] = await Promise.all([
+        fetch('/api/comfyui/workflows').then(r => r.json()).catch(() => ({ workflows: [] })),
+        fetch('/api/comfyui/generations').then(r => r.json()).catch(() => ({ generations: [] })),
+        fetch('/api/comfyui/status').then(r => r.json()).catch(() => ({ connected: false })),
+      ]);
+      setWorkflows(wfRes.workflows || []);
+      setGenerations(genRes.generations || []);
+      setConnected(statusRes.connected || false);
+    } catch {
+      toast.error('Failed to load ComfyUI data');
+    }
     setLoading(false);
   }, []);
 
@@ -58,14 +65,20 @@ export default function ComfyUIPage() {
         field: p.field,
         value: paramValues[`${p.node_id}:${p.field}`] ?? p.default,
       }));
-      await fetch('/api/comfyui/generate', {
+      const res = await fetch('/api/comfyui/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workflow_id: selectedWorkflow.id, params }),
       });
+      if (res.ok) {
+        toast.success('Generation queued');
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to queue generation');
+      }
       await fetchAll();
-    } catch {
-      // handled by UI
+    } catch (err) {
+      toast.error('Failed to connect to ComfyUI');
     }
     setGenerating(false);
   }
@@ -75,23 +88,38 @@ export default function ComfyUIPage() {
       let workflowJson = importForm.workflow_json;
       try { workflowJson = JSON.parse(workflowJson); } catch { /* keep as string */ }
       const tags = importForm.tags ? importForm.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-      await fetch('/api/comfyui/workflows', {
+      const res = await fetch('/api/comfyui/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: importForm.name, description: importForm.description, workflow_json: workflowJson, tags }),
       });
-      setShowImport(false);
-      setImportForm({ name: '', description: '', workflow_json: '', tags: '' });
-      await fetchAll();
+      if (res.ok) {
+        toast.success('Workflow imported');
+        setShowImport(false);
+        setImportForm({ name: '', description: '', workflow_json: '', tags: '' });
+        await fetchAll();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to import workflow');
+      }
     } catch {
-      // handled by UI
+      toast.error('Failed to import workflow');
     }
   }
 
   async function handleDelete(id) {
-    await fetch(`/api/comfyui/workflows/${id}`, { method: 'DELETE' });
-    if (selectedWorkflow?.id === id) setSelectedWorkflow(null);
-    await fetchAll();
+    try {
+      const res = await fetch(`/api/comfyui/workflows/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Workflow deleted');
+        if (selectedWorkflow?.id === id) setSelectedWorkflow(null);
+        await fetchAll();
+      } else {
+        toast.error('Failed to delete workflow');
+      }
+    } catch {
+      toast.error('Failed to delete workflow');
+    }
   }
 
   if (loading) return <AppShell title="ComfyUI"><LoadingSpinner /></AppShell>;
@@ -99,7 +127,6 @@ export default function ComfyUIPage() {
   return (
     <AppShell title="ComfyUI">
       <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
-        {/* Connection Status */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Paintbrush className="h-5 w-5" />
@@ -114,7 +141,6 @@ export default function ComfyUIPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Workflow Library */}
           <div className="lg:col-span-1 space-y-3">
             <h2 className="text-lg font-semibold">Workflow Library</h2>
             {workflows.length === 0 ? (
@@ -159,57 +185,54 @@ export default function ComfyUIPage() {
             )}
           </div>
 
-          {/* Generation Panel */}
           <div className="lg:col-span-2 space-y-4">
             {selectedWorkflow ? (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Generate: {selectedWorkflow.name}</CardTitle>
-                    <CardDescription>Adjust parameters and generate an image</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {(selectedWorkflow.parameters || []).map(p => {
-                      const key = `${p.node_id}:${p.field}`;
-                      return (
-                        <div key={key} className="space-y-1">
-                          <label className="text-sm font-medium">{p.label}</label>
-                          {p.type === 'string' && p.field === 'text' ? (
-                            <Textarea
-                              value={paramValues[key] ?? ''}
-                              onChange={(e) => updateParam(p.node_id, p.field, e.target.value)}
-                              rows={3}
-                            />
-                          ) : p.type === 'number' ? (
-                            <Input
-                              type="number"
-                              value={paramValues[key] ?? ''}
-                              onChange={(e) => updateParam(p.node_id, p.field, parseFloat(e.target.value) || 0)}
-                            />
-                          ) : (
-                            <Input
-                              value={paramValues[key] ?? ''}
-                              onChange={(e) => updateParam(p.node_id, p.field, e.target.value)}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                    <Button onClick={handleGenerate} disabled={generating || !connected} className="w-full">
-                      {generating ? (
-                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
-                      ) : (
-                        <><Play className="h-4 w-4 mr-2" /> Generate</>
-                      )}
-                    </Button>
-                    {!connected && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" /> ComfyUI is not connected. Check settings.
-                      </p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generate: {selectedWorkflow.name}</CardTitle>
+                  <CardDescription>Adjust parameters and generate an image</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(selectedWorkflow.parameters || []).map(p => {
+                    const key = `${p.node_id}:${p.field}`;
+                    return (
+                      <div key={key} className="space-y-1">
+                        <label className="text-sm font-medium">{p.label}</label>
+                        {p.type === 'string' && p.field === 'text' ? (
+                          <Textarea
+                            value={paramValues[key] ?? ''}
+                            onChange={(e) => updateParam(p.node_id, p.field, e.target.value)}
+                            rows={3}
+                          />
+                        ) : p.type === 'number' ? (
+                          <Input
+                            type="number"
+                            value={paramValues[key] ?? ''}
+                            onChange={(e) => updateParam(p.node_id, p.field, parseFloat(e.target.value) || 0)}
+                          />
+                        ) : (
+                          <Input
+                            value={paramValues[key] ?? ''}
+                            onChange={(e) => updateParam(p.node_id, p.field, e.target.value)}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                  <Button onClick={handleGenerate} disabled={generating || !connected} className="w-full">
+                    {generating ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Play className="h-4 w-4 mr-2" /> Generate</>
                     )}
-                  </CardContent>
-                </Card>
-              </>
+                  </Button>
+                  {!connected && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" /> ComfyUI is not connected. Check settings.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center text-muted-foreground">
@@ -219,7 +242,6 @@ export default function ComfyUIPage() {
               </Card>
             )}
 
-            {/* Generation History */}
             <h2 className="text-lg font-semibold">Generation History</h2>
             {generations.length === 0 ? (
               <Card>
@@ -264,7 +286,6 @@ export default function ComfyUIPage() {
           </div>
         </div>
 
-        {/* Import Dialog */}
         <Dialog open={showImport} onOpenChange={setShowImport}>
           <DialogContent>
             <DialogHeader>
