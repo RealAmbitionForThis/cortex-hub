@@ -76,10 +76,11 @@ export function useChat() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
+      let thinkingContent = '';
       let assistantId = crypto.randomUUID();
       let buffer = '';
 
-      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', streaming: true }]);
+      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', thinking: '', streaming: true }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -96,7 +97,12 @@ export function useChat() {
 
           try {
             const event = JSON.parse(raw);
-            if (event.type === 'content') {
+            if (event.type === 'thinking') {
+              thinkingContent += event.content;
+              setMessages((prev) =>
+                prev.map((m) => m.id === assistantId ? { ...m, thinking: thinkingContent } : m)
+              );
+            } else if (event.type === 'content') {
               assistantContent += event.content;
               setMessages((prev) =>
                 prev.map((m) => m.id === assistantId ? { ...m, content: assistantContent } : m)
@@ -116,8 +122,9 @@ export function useChat() {
               });
               // Reset assistant content for the follow-up response
               assistantContent = '';
+              thinkingContent = '';
               assistantId = crypto.randomUUID();
-              setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', streaming: true }]);
+              setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', thinking: '', streaming: true }]);
             } else if (event.type === 'done') {
               setMessages((prev) =>
                 prev.map((m) => m.id === assistantId ? { ...m, streaming: false, tokenStats: event.tokenStats || null } : m)

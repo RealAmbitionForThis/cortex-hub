@@ -82,12 +82,20 @@ export async function POST(request) {
 
 async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions }) {
   try {
-    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions });
+    // Map reasoning level to Ollama think parameter
+    const thinkParam = reasoningLevel === 'high' ? true : reasoningLevel === 'low' ? false : true;
+    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions, think: thinkParam });
     let fullContent = '';
+    let thinkingContent = '';
     let toolCalls = [];
     let tokenStats = null;
 
     for await (const chunk of parseOllamaStream(res)) {
+      // Ollama returns thinking in message.thinking when think=true
+      if (chunk.message?.thinking) {
+        thinkingContent += chunk.message.thinking;
+        send({ type: 'thinking', content: chunk.message.thinking, conversationId: convId });
+      }
       if (chunk.message?.content) {
         fullContent += chunk.message.content;
         send({ type: 'content', content: chunk.message.content, conversationId: convId });
@@ -115,7 +123,11 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
       return;
     }
 
-    saveAssistantMessage(db, convId, fullContent, null, reasoningLevel, tokenStats);
+    // Store thinking content with the message for persistence
+    const contentToSave = thinkingContent
+      ? `<think>${thinkingContent}</think>\n${fullContent}`
+      : fullContent;
+    saveAssistantMessage(db, convId, contentToSave, null, reasoningLevel, tokenStats);
     updateConversationTitle(db, convId, fullContent);
     send({ type: 'done', conversationId: convId, tokenStats });
     close();
