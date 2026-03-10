@@ -68,7 +68,7 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
             </div>
           </div>
         ) : (
-          <StreamingText content={message.content} isStreaming={message.streaming} isUser={isUser} />
+          <StreamingText content={message.content} thinking={message.thinking} isStreaming={message.streaming} isUser={isUser} />
         )}
 
         {/* Copy button - always visible on right side */}
