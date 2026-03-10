@@ -26,6 +26,12 @@ export function createSSEStream() {
   return { stream, send, close, error };
 }
 
+// Parses OpenAI-compatible SSE stream (used by llama-server) and normalizes
+// chunks to the same shape as parseOllamaStream for the chat route.
+// Note: llama.cpp doesn't support Ollama's `think` parameter, so `message.thinking`
+// is never set — the chat route handles this gracefully via optional chaining.
+// OpenAI API also doesn't provide eval_duration/total_duration timing fields —
+// the chat route falls back to 0 for these via || 0 checks.
 export async function* parseOpenAIStream(response) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

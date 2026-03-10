@@ -9,6 +9,10 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
 
   if (options.temperature !== undefined) body.temperature = options.temperature;
   if (options.num_ctx) body.max_tokens = options.num_ctx;
+  if (options.top_p !== undefined) body.top_p = options.top_p;
+  if (options.stop) body.stop = options.stop;
+  if (options.frequency_penalty !== undefined) body.frequency_penalty = options.frequency_penalty;
+  if (options.presence_penalty !== undefined) body.presence_penalty = options.presence_penalty;
 
   if (tools?.length) {
     body.tools = tools;
@@ -107,8 +111,9 @@ export async function listModels() {
 }
 
 export async function showModel(modelName) {
-  // llama-server has no model detail endpoint
-  return { name: modelName, details: {} };
+  // llama-server has no model detail endpoint — return stub with all fields
+  // that models/route.js accesses so optional-chaining and || '' checks work
+  return { name: modelName, details: {}, template: '', modelfile: '', parameters: {} };
 }
 
 export async function checkConnection() {
