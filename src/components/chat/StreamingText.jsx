@@ -1,8 +1,57 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ChevronDown, ChevronRight, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+function parseThinking(content) {
+  if (!content) return { thinking: '', response: '' };
+
+  // Match <think>...</think> blocks (including multiline)
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
+  const thinkBlocks = [];
+  let match;
+  while ((match = thinkRegex.exec(content)) !== null) {
+    thinkBlocks.push(match[1].trim());
+  }
+
+  // Remove think blocks from the response
+  const response = content.replace(thinkRegex, '').trim();
+  const thinking = thinkBlocks.join('\n\n');
+
+  return { thinking, response };
+}
+
+function ThinkingBlock({ thinking }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!thinking) return null;
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+      >
+        <Brain className="h-3 w-3 text-purple-500" />
+        <span className="font-medium">Thinking</span>
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        {!expanded && (
+          <span className="text-[10px] opacity-60 truncate max-w-[200px]">
+            {thinking.slice(0, 80)}{thinking.length > 80 ? '...' : ''}
+          </span>
+        )}
+      </button>
+      {expanded && (
+        <div className="mt-1 pl-3 border-l-2 border-purple-500/30 text-xs text-muted-foreground whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+          {thinking}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function StreamingText({ content, isStreaming, isUser }) {
   if (!content) return null;
@@ -13,8 +62,11 @@ export function StreamingText({ content, isStreaming, isUser }) {
     );
   }
 
+  const { thinking, response } = useMemo(() => parseThinking(content), [content]);
+
   return (
     <div className="text-sm break-words">
+      <ThinkingBlock thinking={thinking} />
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -53,7 +105,7 @@ export function StreamingText({ content, isStreaming, isUser }) {
           td: ({ children }) => <td className="px-2 py-1 border-t">{children}</td>,
         }}
       >
-        {content}
+        {response || content}
       </ReactMarkdown>
       {isStreaming && (
         <span className="inline-block w-1.5 h-4 bg-foreground animate-pulse ml-0.5 align-middle" />
