@@ -6,22 +6,130 @@ import { parseStream, createSSEStream } from '@/lib/llm/streaming';
 import { buildSystemPrompt } from '@/lib/llm/prompts';
 import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
+import { buildAnalysisPrompt } from '@/lib/prompts/analysis-prompt';
+import { processAnalysis, getAvailableModules, parseAnalysisResponse } from '@/lib/analysis/process-analysis';
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, samplingParams, projectId, systemPromptOverride } = body;
+    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, samplingParams, projectId, systemPromptOverride, extraAnalyze } = body;
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model, projectId, systemPromptOverride);
     saveUserMessage(db, convId, message, reasoningLevel);
 
-    const memories = await retrieveRelevantMemories({ query: message });
     const activeClusters = getActiveClusters(db);
 
-    let tools = getToolDefinitions();
+    // Determine analysis timeout from settings
+    let analysisTimeoutMs = 10000;
+    try {
+      const timeoutSetting = db.prepare("SELECT value FROM settings WHERE key = 'analysis_timeout'").get();
+      if (timeoutSetting) {
+        const parsed = JSON.parse(timeoutSetting.value);
+        if (typeof parsed === 'number' && parsed > 0) analysisTimeoutMs = parsed * 1000;
+      }
+    } catch { /* use default */ }
 
-    // Filter tools based on enabled toggles
+    // --- Pre-Analysis Pass (when extra_analyze is enabled) ---
+    let enrichedContext = null;
+    let analysisResult = null;
+
+    if (extraAnalyze) {
+      try {
+        const analysisStart = Date.now();
+
+        // Get available module namespaces dynamically from tool registry
+        const availableModules = getAvailableModules();
+        const activeClusterNames = activeClusters.map(c => c.name);
+
+        // Get recently used modules from last 5 assistant messages with tool calls
+        const recentToolMessages = db.prepare(
+          "SELECT tool_calls FROM messages WHERE conversation_id = ? AND role = 'assistant' AND tool_calls IS NOT NULL ORDER BY created_at DESC LIMIT 5"
+        ).all(convId);
+        const recentModulesUsed = [];
+        for (const row of recentToolMessages) {
+          try {
+            const calls = JSON.parse(row.tool_calls);
+            if (Array.isArray(calls)) {
+              for (const tc of calls) {
+                const name = tc.function?.name ?? '';
+                const dot = name.indexOf('.');
+                if (dot > 0) {
+                  const ns = name.slice(0, dot);
+                  if (!recentModulesUsed.includes(ns)) recentModulesUsed.push(ns);
+                }
+              }
+            }
+          } catch { /* skip malformed */ }
+        }
+
+        const analysisPrompt = buildAnalysisPrompt(availableModules, activeClusterNames, recentModulesUsed);
+
+        // Read the main model from settings
+        let analysisModel = model;
+        if (!analysisModel) {
+          const setting = db.prepare("SELECT value FROM settings WHERE key = 'main_model'").get();
+          analysisModel = setting ? JSON.parse(setting.value) : (process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b');
+        }
+
+        // Non-streaming analysis call with low reasoning + timeout
+        const analysisResponse = await Promise.race([
+          chatCompletion({
+            model: analysisModel,
+            messages: [
+              { role: 'system', content: analysisPrompt },
+              { role: 'user', content: message },
+            ],
+            stream: false,
+            options: { temperature: 0.1 },
+            think: false,
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout')), analysisTimeoutMs)),
+        ]);
+
+        // Parse the non-streaming response
+        let rawAnalysisText = '';
+        if (analysisResponse && typeof analysisResponse.json === 'function') {
+          const jsonData = await analysisResponse.json();
+          rawAnalysisText = jsonData?.message?.content ?? '';
+        }
+
+        const analysisTimeMsElapsed = Date.now() - analysisStart;
+
+        // Process and enrich
+        enrichedContext = await processAnalysis(rawAnalysisText, message);
+
+        if (enrichedContext) {
+          analysisResult = {
+            ...enrichedContext.analysis,
+            analysis_time_ms: analysisTimeMsElapsed,
+            tools_loaded: enrichedContext.filteredTools.length,
+            tools_total: getToolDefinitions().length,
+            memories_found: enrichedContext.memories.length,
+            pre_fetched_keys: Object.keys(enrichedContext.preFetchedData),
+          };
+        }
+      } catch (err) {
+        console.error('[analysis] Pre-analysis failed, falling back to standard flow:', err?.message ?? err);
+        // Fall through — enrichedContext stays null, standard flow continues
+      }
+    }
+
+    // --- Standard flow (with or without enriched context) ---
+    let memories;
+    let tools;
+
+    if (enrichedContext) {
+      // Use enriched memories and filtered tools from analysis
+      memories = enrichedContext.memories;
+      tools = enrichedContext.filteredTools;
+    } else {
+      // Standard: retrieve all memories and all tools
+      memories = await retrieveRelevantMemories({ query: message });
+      tools = getToolDefinitions();
+    }
+
+    // Apply user's tool toggles on top
     if (enabledTools) {
       if (enabledTools.tools === false) {
         tools = [];
@@ -46,6 +154,7 @@ export async function POST(request) {
       tools,
       projectPrompt,
       chatPromptOverride: conv?.system_prompt_override || null,
+      enrichedContext: enrichedContext || undefined,
     });
 
     const history = getMessageHistory(db, convId);
@@ -65,6 +174,11 @@ export async function POST(request) {
     // samplingParams is already in Ollama option key format (temperature, top_p, num_ctx, etc.)
     // built by buildOllamaOptions() on the frontend — pass through as-is
     const ollamaOptions = samplingParams && typeof samplingParams === 'object' ? { ...samplingParams } : {};
+
+    // Send analysis result to frontend BEFORE main response begins
+    if (analysisResult) {
+      send({ type: 'analysis_result', data: analysisResult });
+    }
 
     // Send debug info so the frontend can show exact inputs
     send({ type: 'debug', systemPrompt, messagesCount: messages.length, projectPrompt: projectPrompt || null, model: mainModel });

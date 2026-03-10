@@ -11,7 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Send, Settings2, Paperclip, X, FileText, ChevronDown, RotateCcw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Send, Settings2, Paperclip, X, FileText, ChevronDown, RotateCcw, BrainCircuit } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { ReasoningLevelPicker } from './ReasoningLevelPicker';
 import { ToolToggle } from './ToolToggle';
@@ -19,11 +20,13 @@ import { ProjectSelector } from './ProjectSelector';
 import { SystemPromptEditor } from './SystemPromptEditor';
 import { ClusterSwitcher } from './ClusterSwitcher';
 import { TokenAnalytics } from './TokenAnalytics';
+import { AnalyzerPanel } from './AnalyzerPanel';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { MessageSquare } from 'lucide-react';
 import { SAMPLING_PARAMS, PARAM_GROUPS, getDefaults, buildOllamaOptions } from '@/lib/sampling-params';
+import { cn } from '@/lib/utils';
 
-export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRegenerate, modelName, conversationId, conversationMeta }) {
+export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRegenerate, modelName, conversationId, conversationMeta, analysisState }) {
   const [input, setInput] = useState('');
   const [reasoningLevel, setReasoningLevel] = useState('medium');
   const [enabledTools, setEnabledTools] = useState({ web_search: true, tools: true });
@@ -31,9 +34,23 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
   const [chatSettings, setChatSettings] = useState(getDefaults);
   const [projectId, setProjectId] = useState(conversationMeta?.project_id || null);
   const [systemPromptOverride, setSystemPromptOverride] = useState(conversationMeta?.system_prompt_override || '');
+  const [extraAnalyze, setExtraAnalyze] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('extra_analyze_enabled');
+      return stored !== null ? stored === 'true' : true; // default ON
+    }
+    return true;
+  });
   const scrollRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Persist extraAnalyze preference
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('extra_analyze_enabled', String(extraAnalyze));
+    }
+  }, [extraAnalyze]);
 
   useEffect(() => {
     scrollToBottom();
@@ -63,6 +80,7 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
       samplingParams: buildOllamaOptions(chatSettings),
       projectId,
       systemPromptOverride: systemPromptOverride || undefined,
+      extraAnalyze,
     });
     setInput('');
     setAttachments([]);
@@ -99,6 +117,9 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
         <ClusterSwitcher />
         <TokenAnalytics messages={messages} chatSettings={chatSettings} />
       </div>
+
+      {/* Analyzer Panel — dedicated region above messages */}
+      {extraAnalyze && <AnalyzerPanel analysisState={analysisState} isStreaming={streaming} />}
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
         {messages.length === 0 ? (
@@ -144,6 +165,16 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
           <div className="flex items-center gap-1 flex-wrap">
             <ReasoningLevelPicker value={reasoningLevel} onChange={setReasoningLevel} modelName={modelName} />
             <ToolToggle enabledTools={enabledTools} onToggle={handleToolToggle} />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 h-8"
+              onClick={() => setExtraAnalyze(prev => !prev)}
+            >
+              <BrainCircuit className={cn('h-3.5 w-3.5', extraAnalyze ? 'text-violet-500' : 'text-muted-foreground')} />
+              <span className="text-xs hidden sm:inline">Analyze</span>
+              <Switch checked={extraAnalyze} onCheckedChange={setExtraAnalyze} className="scale-75 ml-0.5" />
+            </Button>
             <ProjectSelector conversationId={conversationId} currentProjectId={projectId} onProjectChange={setProjectId} />
             <SystemPromptEditor conversationId={conversationId} value={systemPromptOverride} onChange={setSystemPromptOverride} />
             <ChatSettingsPopover settings={chatSettings} onChange={setChatSettings} />
