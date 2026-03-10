@@ -37,17 +37,48 @@ export function getToolByName(name) {
 }
 
 export async function executeTool(name, args) {
-  const tool = toolRegistry.get(name);
+  // Sanitize tool name — models sometimes append junk tokens like <|channel|>commentary
+  const cleanName = sanitizeToolName(name);
+  const tool = toolRegistry.get(cleanName);
   if (!tool) {
-    return { error: `Unknown tool: ${name}` };
+    return { error: `Unknown tool: ${cleanName}` };
+  }
+
+  // Sanitize args — remove empty string values that break queries
+  const cleanArgs = {};
+  if (args && typeof args === 'object') {
+    for (const [key, val] of Object.entries(args)) {
+      // Skip empty keys and empty string values
+      if (!key || key.trim() === '') continue;
+      if (typeof val === 'string' && val.trim() === '') continue;
+      cleanArgs[key] = val;
+    }
   }
 
   try {
-    const result = await tool.handler(args);
+    const result = await tool.handler(cleanArgs);
     return result;
   } catch (error) {
     return { error: error.message || 'Tool execution failed' };
   }
+}
+
+function sanitizeToolName(name) {
+  if (!name) return '';
+  // Strip everything after common junk patterns models append
+  let clean = name.replace(/<\|[^|]*\|>.*/g, '');
+  // Strip any non-alphanumeric/dot/underscore characters from the end
+  clean = clean.replace(/[^a-zA-Z0-9._]+$/, '');
+  // Try to match against known tools if still not found
+  if (!toolRegistry.has(clean)) {
+    // Fuzzy match: find the tool whose name is a prefix of the dirty name
+    for (const toolName of toolRegistry.keys()) {
+      if (name.startsWith(toolName)) {
+        return toolName;
+      }
+    }
+  }
+  return clean;
 }
 
 export function getAllToolNames() {
