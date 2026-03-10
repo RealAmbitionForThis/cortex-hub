@@ -7,21 +7,34 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
     stream,
   };
 
-  // Map Ollama option keys to OpenAI / llama-server compatible keys
+  // Map Ollama option keys → llama-server /v1/chat/completions keys.
+  // llama-server extends the OpenAI API with its own sampling params (mirostat, top_k, etc.)
+  // See: github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md
+
+  // Sampling
   if (options.temperature !== undefined) body.temperature = options.temperature;
-  if (options.num_ctx) body.max_tokens = options.num_ctx;
-  if (options.num_predict !== undefined && options.num_predict >= 0) body.max_tokens = options.num_predict;
   if (options.top_p !== undefined) body.top_p = options.top_p;
   if (options.top_k !== undefined) body.top_k = options.top_k;
   if (options.min_p !== undefined) body.min_p = options.min_p;
-  if (options.stop && options.stop.length > 0) body.stop = options.stop;
-  if (options.repeat_penalty !== undefined) body.frequency_penalty = options.repeat_penalty;
-  if (options.presence_penalty !== undefined) body.presence_penalty = options.presence_penalty;
+  if (options.typical_p !== undefined) body.typical_p = options.typical_p;
+
+  // Generation — num_predict → max_tokens (OpenAI name), num_ctx sets context size
+  if (options.num_ctx) body.max_tokens = options.num_ctx;
+  if (options.num_predict !== undefined && options.num_predict >= 0) body.max_tokens = options.num_predict;
   if (options.seed !== undefined && options.seed >= 0) body.seed = options.seed;
+  if (options.stop && options.stop.length > 0) body.stop = options.stop;
+
+  // Penalties — llama-server uses the same names as OpenAI + its own repeat_penalty
+  if (options.repeat_penalty !== undefined) body.repeat_penalty = options.repeat_penalty;
+  if (options.repeat_last_n !== undefined) body.repeat_last_n = options.repeat_last_n;
+  if (options.frequency_penalty !== undefined) body.frequency_penalty = options.frequency_penalty;
+  if (options.presence_penalty !== undefined) body.presence_penalty = options.presence_penalty;
+
+  // Advanced — llama-server supports these natively
   if (options.mirostat !== undefined) body.mirostat = options.mirostat;
   if (options.mirostat_tau !== undefined) body.mirostat_tau = options.mirostat_tau;
   if (options.mirostat_eta !== undefined) body.mirostat_eta = options.mirostat_eta;
-  if (options.tfs_z !== undefined) body.tfs_z = options.tfs_z;
+  if (options.dynatemp_range !== undefined) body.dynatemp_range = options.dynatemp_range;
 
   if (tools?.length) {
     body.tools = tools;
