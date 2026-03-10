@@ -120,7 +120,7 @@ export function useChat() {
               setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', streaming: true }]);
             } else if (event.type === 'done') {
               setMessages((prev) =>
-                prev.map((m) => m.id === assistantId ? { ...m, streaming: false } : m)
+                prev.map((m) => m.id === assistantId ? { ...m, streaming: false, tokenStats: event.tokenStats || null } : m)
               );
             }
           } catch {
