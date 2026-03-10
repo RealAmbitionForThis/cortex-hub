@@ -79,6 +79,8 @@ export function useChat() {
       let thinkingContent = '';
       let assistantId = crypto.randomUUID();
       let buffer = '';
+      let debugInfo = null;
+      let toolRounds = [];
 
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', thinking: '', streaming: true }]);
 
@@ -97,7 +99,11 @@ export function useChat() {
 
           try {
             const event = JSON.parse(raw);
-            if (event.type === 'thinking') {
+            if (event.type === 'debug') {
+              debugInfo = { systemPrompt: event.systemPrompt, messagesCount: event.messagesCount, projectPrompt: event.projectPrompt, model: event.model };
+            } else if (event.type === 'debug_tool_round') {
+              toolRounds.push({ round: event.round, messages: event.messages });
+            } else if (event.type === 'thinking') {
               thinkingContent += event.content;
               setMessages((prev) =>
                 prev.map((m) => m.id === assistantId ? { ...m, thinking: thinkingContent } : m)
@@ -127,7 +133,7 @@ export function useChat() {
               setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', thinking: '', streaming: true }]);
             } else if (event.type === 'done') {
               setMessages((prev) =>
-                prev.map((m) => m.id === assistantId ? { ...m, streaming: false, tokenStats: event.tokenStats || null } : m)
+                prev.map((m) => m.id === assistantId ? { ...m, streaming: false, tokenStats: event.tokenStats || null, debugInfo, toolRounds: toolRounds.length > 0 ? toolRounds : undefined } : m)
               );
             }
           } catch {

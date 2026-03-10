@@ -35,6 +35,12 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
     scrollToBottom();
   }, [messages]);
 
+  // Sync projectId and systemPromptOverride when conversation changes
+  useEffect(() => {
+    setProjectId(conversationMeta?.project_id || null);
+    setSystemPromptOverride(conversationMeta?.system_prompt_override || '');
+  }, [conversationMeta]);
+
   function scrollToBottom() {
     if (scrollRef.current) {
       const el = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');

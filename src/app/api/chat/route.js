@@ -66,6 +66,9 @@ export async function POST(request) {
     if (temperature !== undefined) ollamaOptions.temperature = temperature;
     if (contextWindow) ollamaOptions.num_ctx = contextWindow;
 
+    // Send debug info so the frontend can show exact inputs
+    send({ type: 'debug', systemPrompt, messagesCount: messages.length, projectPrompt: projectPrompt || null, model: mainModel });
+
     streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions });
 
     return new Response(stream, {
@@ -177,6 +180,9 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
         { role: 'assistant', content: currentContent, tool_calls: currentToolCalls },
         ...toolResults,
       ];
+
+      // Send debug snapshot of messages going to the model for this tool round
+      send({ type: 'debug_tool_round', round: round + 1, messages: currentMessages.map(m => ({ role: m.role, content: m.content?.slice(0, 500), tool_calls: m.tool_calls ? m.tool_calls.map(tc => tc.function?.name) : undefined })) });
 
       const res = await chatCompletion({ model: mainModel, messages: currentMessages, tools, stream: true, options: ollamaOptions });
       let nextContent = '';

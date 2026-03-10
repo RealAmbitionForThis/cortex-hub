@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-react';
+import { DebugPanel } from './DebugPanel';
 
 export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
   const [editing, setEditing] = useState(false);
@@ -71,17 +72,24 @@ export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
           <StreamingText content={message.content} thinking={message.thinking} isStreaming={message.streaming} isUser={isUser} />
         )}
 
-        {/* Copy button - always visible on right side */}
+        {/* Action buttons - visible on hover */}
         {!editing && !message.streaming && message.content && (
-          <button
-            onClick={handleCopy}
-            className={cn(
-              'absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
-              isUser ? 'hover:bg-primary-foreground/20' : 'hover:bg-accent'
+          <div className={cn(
+            'absolute top-2 right-2 flex items-center gap-0.5',
+          )}>
+            {!isUser && (
+              <DebugPanel debugInfo={message.debugInfo} toolRounds={message.toolRounds} tokenStats={message.tokenStats} />
             )}
-          >
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
+            <button
+              onClick={handleCopy}
+              className={cn(
+                'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
+                isUser ? 'hover:bg-primary-foreground/20' : 'hover:bg-accent'
+              )}
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+          </div>
         )}
       </div>
     </div>
