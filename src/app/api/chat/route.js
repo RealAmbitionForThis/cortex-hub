@@ -1,8 +1,8 @@
 import { success, error as errorResponse, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
-import { chatCompletion } from '@/lib/llm/client';
-import { parseOllamaStream, createSSEStream } from '@/lib/llm/streaming';
+import { chatCompletion, getBackend } from '@/lib/llm/provider';
+import { parseStream, createSSEStream } from '@/lib/llm/streaming';
 import { buildSystemPrompt } from '@/lib/llm/prompts';
 import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
@@ -93,7 +93,7 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
     let toolCalls = [];
     let tokenStats = null;
 
-    for await (const chunk of parseOllamaStream(res)) {
+    for await (const chunk of parseStream(res, getBackend())) {
       // Ollama returns thinking in message.thinking when think=true
       if (chunk.message?.thinking) {
         thinkingContent += chunk.message.thinking;
@@ -188,7 +188,7 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
       let nextContent = '';
       let nextToolCalls = [];
 
-      for await (const chunk of parseOllamaStream(res)) {
+      for await (const chunk of parseStream(res, getBackend())) {
         if (chunk.message?.content) {
           nextContent += chunk.message.content;
           send({ type: 'content', content: chunk.message.content, conversationId: convId });

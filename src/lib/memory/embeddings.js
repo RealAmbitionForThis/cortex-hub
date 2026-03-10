@@ -1,4 +1,4 @@
-import { generateEmbedding } from '@/lib/llm/client';
+import { generateEmbedding } from '@/lib/llm/provider';
 
 export async function textToVector(text) {
   if (!text || typeof text !== 'string') return null;

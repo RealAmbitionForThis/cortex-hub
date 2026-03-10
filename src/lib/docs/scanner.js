@@ -1,4 +1,4 @@
-import { generateCompletion } from '@/lib/llm/client';
+import { generateCompletion } from '@/lib/llm/provider';
 
 export async function scanDocument(imageBase64, type = 'receipt') {
   const prompts = {

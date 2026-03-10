@@ -19,9 +19,11 @@ import { OllamaModelManager } from '@/components/settings/OllamaModelManager';
 import { DataManagement } from '@/components/settings/DataManagement';
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { ComfyUISettings } from '@/components/settings/ComfyUISettings';
+import { BackendSettings } from '@/components/settings/BackendSettings';
 import { SystemDashboard } from '@/components/shared/SystemDashboard';
 
 const TABS = [
+  { value: 'backend', label: 'Backend' },
   { value: 'models', label: 'Models' },
   { value: 'memory', label: 'Memory' },
   { value: 'clusters', label: 'Clusters' },
@@ -56,6 +58,7 @@ export default function SettingsPage() {
             </TabsList>
           </ScrollArea>
           <div className="flex-1 min-w-0">
+            <TabsContent value="backend"><BackendSettings settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="models"><ModelConfig settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="memory"><MemorySettings settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="clusters"><ClusterManager /></TabsContent>
@@ -67,14 +70,29 @@ export default function SettingsPage() {
             <TabsContent value="mcp"><McpServerManager /></TabsContent>
             <TabsContent value="comfyui"><ComfyUISettings settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="ollama">
-                <OllamaConnection settings={settings} onSave={updateSettings} />
-                <div className="mt-6">
-                  <OllamaModelManager />
-                </div>
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-4">System Dashboard</h3>
-                  <SystemDashboard compact={false} />
-                </div>
+                {(settings.cortex_backend || 'ollama') === 'ollama' ? (
+                  <>
+                    <OllamaConnection settings={settings} onSave={updateSettings} />
+                    <div className="mt-6">
+                      <OllamaModelManager />
+                    </div>
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-4">System Dashboard</h3>
+                      <SystemDashboard compact={false} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Ollama</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Ollama model management is not available when using the llama.cpp backend.
+                      Model management is handled externally with llama-server.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Switch to the Ollama backend in the Backend tab to access model management.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
             <TabsContent value="data"><DataManagement /></TabsContent>
             <TabsContent value="appearance"><AppearanceSettings /></TabsContent>

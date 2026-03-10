@@ -1,4 +1,4 @@
-import { listModels, checkConnection } from './client';
+import { listModels, checkConnection } from './provider';
 
 export async function getAvailableModels() {
   try {
