@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Brain, Plus, DollarSign, Heart, Car, Users, CheckSquare,
   FileText, Database, Download, Paintbrush, FolderOpen,
-  ChevronDown, ChevronRight, Settings, Pin, MessageSquare,
+  ChevronDown, ChevronRight, Settings, Pin, MessageSquare, Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +22,7 @@ const NAV_GROUPS = [
     label: 'Life',
     items: [
       { href: '/money', icon: DollarSign, label: 'Money' },
+      { href: '/wishlist', icon: Gift, label: 'Wishlist' },
       { href: '/health', icon: Heart, label: 'Health' },
       { href: '/vehicle', icon: Car, label: 'Vehicle' },
     ],

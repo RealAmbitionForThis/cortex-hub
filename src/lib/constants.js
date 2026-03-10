@@ -136,3 +136,39 @@ export const INTERACTION_TYPES = [
   'social',
   'other',
 ];
+
+export const SLEEP_QUALITY_LABELS = [
+  'Terrible',
+  'Poor',
+  'Fair',
+  'Good',
+  'Excellent',
+];
+
+export const SUBSCRIPTION_CATEGORIES = [
+  'streaming',
+  'music',
+  'fitness',
+  'software',
+  'gaming',
+  'news',
+  'cloud',
+  'other',
+];
+
+export const WISHLIST_CATEGORIES = [
+  'electronics',
+  'gaming',
+  'clothing',
+  'home',
+  'hobby',
+  'travel',
+  'education',
+  'other',
+];
+
+export const WISHLIST_PRIORITIES = [
+  'low',
+  'medium',
+  'high',
+];

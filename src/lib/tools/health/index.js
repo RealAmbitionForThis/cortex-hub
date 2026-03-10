@@ -1,4 +1,4 @@
-import { logMeal, logWorkout, getHealthStats, setHealthGoal, getHealthGoals } from './queries';
+import { logMeal, logWorkout, getHealthStats, setHealthGoal, getHealthGoals, logSleep, getSleepStats, getSleepMoodCorrelation } from './queries';
 
 export const healthTools = [
   {
@@ -30,5 +30,23 @@ export const healthTools = [
     description: 'Get progress toward health goals',
     parameters: { type: 'object', properties: { type: { type: 'string' } } },
     handler: () => ({ goals: getHealthGoals(), stats: getHealthStats() }),
+  },
+  {
+    name: 'health.log_sleep',
+    description: 'Log a sleep entry with bedtime, wake time, and quality rating (1-5)',
+    parameters: { type: 'object', properties: { bedtime: { type: 'string', description: 'HH:MM format' }, wake_time: { type: 'string', description: 'HH:MM format' }, quality: { type: 'number', description: '1-5 rating' }, notes: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD, defaults to today' } }, required: ['bedtime', 'wake_time'] },
+    handler: (p) => ({ success: true, id: logSleep(p) }),
+  },
+  {
+    name: 'health.get_sleep_stats',
+    description: 'Get sleep statistics including averages, streak, and trends',
+    parameters: { type: 'object', properties: {} },
+    handler: () => getSleepStats(),
+  },
+  {
+    name: 'health.get_sleep_insights',
+    description: 'Get sleep-mood correlation insights',
+    parameters: { type: 'object', properties: {} },
+    handler: () => getSleepMoodCorrelation(),
   },
 ];

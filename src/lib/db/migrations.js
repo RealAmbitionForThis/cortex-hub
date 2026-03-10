@@ -11,6 +11,10 @@ function runAlterMigrations(db) {
   const alterStatements = [
     'ALTER TABLE conversations ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL',
     'ALTER TABLE conversations ADD COLUMN system_prompt_override TEXT',
+    'ALTER TABLE bills ADD COLUMN is_subscription INTEGER DEFAULT 0',
+    'ALTER TABLE bills ADD COLUMN service_url TEXT',
+    'ALTER TABLE bills ADD COLUMN last_used TEXT',
+    'ALTER TABLE bills ADD COLUMN usage_rating INTEGER',
   ];
   for (const sql of alterStatements) {
     try {
@@ -56,6 +60,11 @@ function createIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_fuel_logs_vehicle ON fuel_logs(vehicle_id);
     CREATE INDEX IF NOT EXISTS idx_maintenance_vehicle ON maintenance_logs(vehicle_id);
     CREATE INDEX IF NOT EXISTS idx_interactions_contact ON contact_interactions(contact_id);
+    CREATE INDEX IF NOT EXISTS idx_sleep_logs_date ON sleep_logs(date);
+    CREATE INDEX IF NOT EXISTS idx_wishlist_purchased ON wishlist_items(purchased);
+    CREATE INDEX IF NOT EXISTS idx_pods_wishlist ON savings_pods(wishlist_item_id);
+    CREATE INDEX IF NOT EXISTS idx_pod_contributions_pod ON pod_contributions(pod_id);
+    CREATE INDEX IF NOT EXISTS idx_bills_subscription ON bills(is_subscription);
   `);
 }
 
@@ -257,6 +266,53 @@ function createModuleTables(db) {
       target REAL NOT NULL,
       unit TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sleep_logs (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL UNIQUE,
+      bedtime TEXT,
+      wake_time TEXT,
+      duration_hours REAL,
+      quality INTEGER,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS wishlist_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      target_price REAL,
+      current_price REAL,
+      priority TEXT DEFAULT 'medium',
+      url TEXT,
+      category TEXT,
+      notes TEXT,
+      purchased INTEGER DEFAULT 0,
+      purchased_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS savings_pods (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      target_amount REAL NOT NULL,
+      current_amount REAL DEFAULT 0,
+      wishlist_item_id TEXT,
+      icon TEXT DEFAULT '🎯',
+      color TEXT DEFAULT '#6366f1',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (wishlist_item_id) REFERENCES wishlist_items(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS pod_contributions (
+      id TEXT PRIMARY KEY,
+      pod_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      note TEXT,
+      date TEXT NOT NULL DEFAULT (date('now')),
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (pod_id) REFERENCES savings_pods(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS vehicles (
