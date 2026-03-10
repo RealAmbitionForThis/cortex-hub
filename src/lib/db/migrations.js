@@ -19,6 +19,20 @@ function runAlterMigrations(db) {
       // Column already exists — ignore
     }
   }
+
+  // Project documents join table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS project_documents (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      document_id TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+      FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+      UNIQUE(project_id, document_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_project_docs_project ON project_documents(project_id);
+  `);
 }
 
 function createIndexes(db) {

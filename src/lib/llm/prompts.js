@@ -64,14 +64,26 @@ function buildClusterSection(clusters, clusterMemories) {
 function buildToolSection(tools) {
   const defs = tools.map((t) => {
     const fn = t.function || t;
-    return `- ${fn.name}: ${fn.description}`;
+    const params = fn.parameters?.properties
+      ? Object.entries(fn.parameters.properties).map(([k, v]) => `${k} (${v.type})`).join(', ')
+      : '';
+    return `- ${fn.name}(${params}): ${fn.description}`;
   }).join('\n');
-  return `## Available Tools\n${defs}`;
+  return `## Available Tools
+IMPORTANT: When calling tools, use ONLY the exact tool name (e.g. "memory.search", "money.add_transaction"). Do NOT append any extra tokens, tags, or text after the tool name. Tool names are case-sensitive and must match exactly.
+
+${defs}`;
 }
 
 function buildRulesSection() {
-  return `## Rules
-- Always use tools to store structured data. Don't just acknowledge — actually save it.
+  return `## Tool Calling Rules
+- ALWAYS call a tool when the user provides data that should be stored. Don't just acknowledge — SAVE it.
+- Use the EXACT tool name as listed above. Never modify, append to, or abbreviate tool names.
+- Provide clean JSON arguments. Only include parameters that have actual values — omit empty or irrelevant parameters.
+- If a tool returns an error, tell the user what went wrong. Don't silently retry with the same broken call.
+- If you need to look something up first, call the appropriate search/list/get tool BEFORE responding.
+
+## Behavior Rules
 - Be conversational and brief. This is a chat, not a report.
 - Reference memories naturally. Never say "according to my records" or "based on my memory."
 - If unsure about a value (like calories), estimate and note the estimate.
