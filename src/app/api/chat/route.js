@@ -162,7 +162,10 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
 
         const result = await executeTool(name, args);
         send({ type: 'tool_result', name, result });
-        toolResults.push({ role: 'tool', content: JSON.stringify(result) });
+        const toolMsg = { role: 'tool', content: JSON.stringify(result) };
+        // Include tool_call_id if the model provided one, so the model can associate results with calls
+        if (tc.id) toolMsg.tool_call_id = tc.id;
+        toolResults.push(toolMsg);
       }
 
       if (currentContent) {
@@ -249,7 +252,17 @@ function saveAssistantMessage(db, convId, content, toolCalls, reasoningLevel, to
 }
 
 function getMessageHistory(db, convId) {
-  return db.prepare('SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 50').all(convId);
+  const rows = db.prepare('SELECT role, content, tool_calls FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 50').all(convId);
+  return rows.map(row => {
+    const msg = { role: row.role, content: row.content || '' };
+    // Restore tool_calls on assistant messages so the model sees its prior tool usage
+    if (row.tool_calls) {
+      try {
+        msg.tool_calls = JSON.parse(row.tool_calls);
+      } catch {}
+    }
+    return msg;
+  });
 }
 
 function getActiveClusters(db) {
