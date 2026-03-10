@@ -15,6 +15,10 @@ function runAlterMigrations(db) {
     'ALTER TABLE bills ADD COLUMN service_url TEXT',
     'ALTER TABLE bills ADD COLUMN last_used TEXT',
     'ALTER TABLE bills ADD COLUMN usage_rating INTEGER',
+    'ALTER TABLE schedules ADD COLUMN notify_via_ntfy INTEGER DEFAULT 0',
+    'ALTER TABLE schedules ADD COLUMN last_run TEXT',
+    'ALTER TABLE transactions ADD COLUMN source TEXT DEFAULT \'manual\'',
+    'ALTER TABLE transactions ADD COLUMN recurring INTEGER DEFAULT 0',
   ];
   for (const sql of alterStatements) {
     try {

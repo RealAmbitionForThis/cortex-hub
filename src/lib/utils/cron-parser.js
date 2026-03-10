@@ -8,6 +8,25 @@ export function cronToHuman(expression) {
   }
 }
 
+export function buildCronExpression(frequency, options = {}) {
+  const { minute = 0, hour = 9, dayOfWeek = 1, dayOfMonth = 1, interval = 5 } = options;
+
+  switch (frequency) {
+    case 'minutes':
+      return `*/${interval} * * * *`;
+    case 'hourly':
+      return `${minute} * * * *`;
+    case 'daily':
+      return `${minute} ${hour} * * *`;
+    case 'weekly':
+      return `${minute} ${hour} * * ${dayOfWeek}`;
+    case 'monthly':
+      return `${minute} ${hour} ${dayOfMonth} * *`;
+    default:
+      return '0 9 * * *';
+  }
+}
+
 export function getNextRunDate(cronExpression) {
   const parts = cronExpression.trim().split(/\s+/);
   if (parts.length < 5) return null;

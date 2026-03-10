@@ -224,17 +224,33 @@ function SettingsParamControl({ param, value, onChange }) {
 }
 
 function ModelSelect({ label, value, onChange, models }) {
+  const [manualInput, setManualInput] = useState('');
+  const hasModels = models.length > 0;
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
-        <SelectContent>
-          {models.map((m) => (
-            <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {hasModels ? (
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+          <SelectContent>
+            {models.map((m) => (
+              <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
+      <div className="flex gap-2">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type model name..."
+          className="text-sm"
+        />
+      </div>
+      {!hasModels && (
+        <p className="text-xs text-muted-foreground">No models detected from backend. Type a model name manually.</p>
+      )}
     </div>
   );
 }

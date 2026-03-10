@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusDot } from '@/components/shared/StatusDot';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Plus, X } from 'lucide-react';
 
 export function BackendSettings({ settings, onSave }) {
   const [backend, setBackend] = useState(settings.cortex_backend || 'ollama');
@@ -15,12 +16,19 @@ export function BackendSettings({ settings, onSave }) {
   const [embeddingUrl, setEmbeddingUrl] = useState(settings.cortex_embedding_url || '');
   const [connected, setConnected] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [llamaModels, setLlamaModels] = useState(() => {
+    try { const raw = settings.llamacpp_models; return raw ? JSON.parse(raw) : []; } catch { return []; }
+  });
+  const [newModelName, setNewModelName] = useState('');
+  const [llamaDefaultCtx, setLlamaDefaultCtx] = useState(settings.llamacpp_default_ctx || 4096);
 
   useEffect(() => {
     setBackend(settings.cortex_backend || 'ollama');
     setOllamaUrl(settings.ollama_url || 'http://localhost:11434');
     setLlamacppUrl(settings.llamacpp_url || 'http://localhost:8080');
     setEmbeddingUrl(settings.cortex_embedding_url || '');
+    setLlamaDefaultCtx(settings.llamacpp_default_ctx || 4096);
+    try { const raw = settings.llamacpp_models; setLlamaModels(raw ? JSON.parse(raw) : []); } catch { setLlamaModels([]); }
   }, [settings]);
 
   const testConnection = useCallback(async () => {
@@ -44,6 +52,17 @@ export function BackendSettings({ settings, onSave }) {
     testConnection();
   }, [testConnection]);
 
+  function addLlamaModel() {
+    const name = newModelName.trim();
+    if (!name || llamaModels.includes(name)) return;
+    setLlamaModels(prev => [...prev, name]);
+    setNewModelName('');
+  }
+
+  function removeLlamaModel(name) {
+    setLlamaModels(prev => prev.filter(m => m !== name));
+  }
+
   function handleSave() {
     const updates = { cortex_backend: backend };
     if (backend === 'ollama') {
@@ -51,8 +70,11 @@ export function BackendSettings({ settings, onSave }) {
     } else {
       updates.llamacpp_url = llamacppUrl;
       updates.cortex_embedding_url = embeddingUrl;
+      updates.llamacpp_models = JSON.stringify(llamaModels);
+      updates.llamacpp_default_ctx = llamaDefaultCtx;
     }
     onSave(updates);
+    toast.success('Backend settings saved');
   }
 
   return (
@@ -104,6 +126,52 @@ export function BackendSettings({ settings, onSave }) {
             <p className="text-xs text-muted-foreground">
               Fallback endpoint for embeddings if llama-server was not started with --embedding. Leave empty to try the main llama-server URL first.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Default Context Window</Label>
+            <Input
+              type="number"
+              value={llamaDefaultCtx}
+              onChange={(e) => setLlamaDefaultCtx(parseInt(e.target.value) || 4096)}
+              min={512}
+              max={131072}
+              step={512}
+            />
+            <p className="text-xs text-muted-foreground">
+              Default context window size for llama-server. This overrides the chat settings default.
+            </p>
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <Label>Model Names</Label>
+            <p className="text-xs text-muted-foreground">
+              llama-server does not always list models via API. Add model names here so they appear in the model selector.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={newModelName}
+                onChange={(e) => setNewModelName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLlamaModel(); } }}
+                placeholder="e.g. gemma-3-12b-it"
+                className="flex-1"
+              />
+              <Button variant="outline" size="sm" onClick={addLlamaModel} disabled={!newModelName.trim()}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {llamaModels.length > 0 && (
+              <div className="flex gap-1.5 flex-wrap">
+                {llamaModels.map((m) => (
+                  <span key={m} className="inline-flex items-center gap-1 bg-muted rounded-md px-2 py-1 text-xs font-mono">
+                    {m}
+                    <button onClick={() => removeLlamaModel(m)} className="hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}

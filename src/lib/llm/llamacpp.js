@@ -18,8 +18,9 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   if (options.min_p !== undefined) body.min_p = options.min_p;
   if (options.typical_p !== undefined) body.typical_p = options.typical_p;
 
-  // Generation — num_predict → max_tokens (OpenAI name), num_ctx sets context size
-  if (options.num_ctx) body.max_tokens = options.num_ctx;
+  // Generation — num_ctx sets context size (n_ctx in llama-server), num_predict → max_tokens (OpenAI name)
+  // llama-server supports n_predict and n_ctx as native params
+  if (options.num_ctx) body.n_ctx = options.num_ctx;
   if (options.num_predict !== undefined && options.num_predict >= 0) body.max_tokens = options.num_predict;
   if (options.seed !== undefined && options.seed >= 0) body.seed = options.seed;
   if (options.stop && options.stop.length > 0) body.stop = options.stop;
