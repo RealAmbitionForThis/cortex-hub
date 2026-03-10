@@ -37,6 +37,7 @@ function ChatPage() {
         modelName={defaultModel}
         conversationId={chat.conversationId}
         conversationMeta={chat.conversationMeta}
+        analysisState={chat.analysisState}
       />
     </AppShell>
   );

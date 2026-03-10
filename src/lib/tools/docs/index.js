@@ -16,7 +16,7 @@ export const docTools = [
     },
     handler: async (args) => {
       const id = addDocument(args);
-      await indexDocument(id, args.content).catch(() => {});
+      await indexDocument(id, args.content).catch((e) => { console.error('[docs] Failed to index document:', e.message); });
       return { success: true, id };
     },
   },

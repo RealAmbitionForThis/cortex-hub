@@ -60,7 +60,7 @@ export async function generateDailyLog() {
       JSON.stringify(parsed.highlights || []),
       embedding ? vectorToBuffer(embedding) : null
     );
-  } catch {
-    // Daily log generation failed silently
+  } catch (e) {
+    console.error('[memory/daily-log] Daily log generation failed:', e.message);
   }
 }

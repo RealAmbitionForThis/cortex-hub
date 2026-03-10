@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { useOllama } from '@/hooks/useOllama';
-import { RefreshCw, RotateCcw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { RefreshCw, RotateCcw, BrainCircuit } from 'lucide-react';
 import { SAMPLING_PARAMS, PARAM_GROUPS, getDefaults } from '@/lib/sampling-params';
 
 export function ModelConfig({ settings, onSave }) {
@@ -15,6 +16,9 @@ export function ModelConfig({ settings, onSave }) {
   const [mainModel, setMainModel] = useState(settings.main_model || '');
   const [visionModel, setVisionModel] = useState(settings.vision_model || '');
   const [embeddingModel, setEmbeddingModel] = useState(settings.embedding_model || '');
+  const [extraAnalyzeEnabled, setExtraAnalyzeEnabled] = useState(settings.extra_analyze_enabled ?? true);
+  const [showAnalyzerPanel, setShowAnalyzerPanel] = useState(settings.show_analyzer_panel ?? true);
+  const [analysisTimeout, setAnalysisTimeout] = useState(settings.analysis_timeout ?? 10);
 
   const defaults = getDefaults();
   const [samplingDefaults, setSamplingDefaults] = useState(() => {
@@ -29,6 +33,9 @@ export function ModelConfig({ settings, onSave }) {
     setMainModel(settings.main_model || '');
     setVisionModel(settings.vision_model || '');
     setEmbeddingModel(settings.embedding_model || '');
+    setExtraAnalyzeEnabled(settings.extra_analyze_enabled ?? true);
+    setShowAnalyzerPanel(settings.show_analyzer_panel ?? true);
+    setAnalysisTimeout(settings.analysis_timeout ?? 10);
     const saved = {};
     for (const p of Object.values(SAMPLING_PARAMS)) {
       saved[p.key] = settings[`sampling_${p.key}`] ?? p.default;
@@ -45,6 +52,9 @@ export function ModelConfig({ settings, onSave }) {
       main_model: mainModel,
       vision_model: visionModel,
       embedding_model: embeddingModel,
+      extra_analyze_enabled: extraAnalyzeEnabled,
+      show_analyzer_panel: showAnalyzerPanel,
+      analysis_timeout: analysisTimeout,
       ...samplingSettings,
     });
   }
@@ -71,6 +81,47 @@ export function ModelConfig({ settings, onSave }) {
       <ModelSelect label="Main Model" value={mainModel} onChange={setMainModel} models={models} />
       <ModelSelect label="Vision Model" value={visionModel} onChange={setVisionModel} models={models} />
       <ModelSelect label="Embedding Model" value={embeddingModel} onChange={setEmbeddingModel} models={models} />
+
+      <div className="border-t pt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <BrainCircuit className="h-5 w-5 text-violet-500" />
+          <h3 className="text-lg font-medium">Extra-Analyze (Pre-Analysis)</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          When enabled, every chat message goes through a quick analysis pass before the main response.
+          This detects intent, selects only relevant tools, and pre-fetches context data for faster, more accurate responses.
+        </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Enable Extra-Analyze</Label>
+              <p className="text-xs text-muted-foreground">Default state for the chat toggle</p>
+            </div>
+            <Switch checked={extraAnalyzeEnabled} onCheckedChange={setExtraAnalyzeEnabled} />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Show Analyzer Panel</Label>
+              <p className="text-xs text-muted-foreground">Display analysis results above chat messages</p>
+            </div>
+            <Switch checked={showAnalyzerPanel} onCheckedChange={setShowAnalyzerPanel} />
+          </div>
+          <div className="space-y-2">
+            <Label>Analysis Timeout (seconds)</Label>
+            <Input
+              type="number"
+              value={analysisTimeout}
+              onChange={(e) => setAnalysisTimeout(Math.max(1, Math.min(30, Number(e.target.value))))}
+              min={1}
+              max={30}
+              step={1}
+            />
+            <p className="text-xs text-muted-foreground">
+              Max seconds to wait for analysis before falling back to standard flow (default: 10s)
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="border-t pt-6">
         <div className="flex items-center justify-between mb-4">

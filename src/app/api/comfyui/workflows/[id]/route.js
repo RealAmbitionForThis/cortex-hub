@@ -1,14 +1,6 @@
 import { success, error, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-
-function parseWorkflow(row) {
-  return {
-    ...row,
-    workflow_json: row.workflow_json ? JSON.parse(row.workflow_json) : null,
-    parameters: row.parameters ? JSON.parse(row.parameters) : [],
-    tags: row.tags ? JSON.parse(row.tags) : [],
-  };
-}
+import { parseWorkflow } from '@/lib/comfyui/parse';
 
 export async function GET(request, { params }) {
   try {

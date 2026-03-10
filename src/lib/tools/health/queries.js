@@ -36,7 +36,7 @@ export function getHealthStats() {
   weekAgo.setDate(weekAgo.getDate() - 7);
   const weekWorkouts = getDb().prepare('SELECT COUNT(*) as count FROM workouts WHERE date >= ?').get(weekAgo.toISOString().split('T')[0]);
 
-  return { calories_today: totalCals, protein_today: totalProtein, workouts_this_week: weekWorkouts.count, meals_today: meals.length };
+  return { calories_today: totalCals, protein_today: totalProtein, workouts_this_week: weekWorkouts?.count ?? 0, meals_today: meals.length };
 }
 
 export function setHealthGoal({ type, target, unit }) {
@@ -99,11 +99,11 @@ export function getSleepStats() {
   }
 
   return {
-    avg_hours_7d: week.avg_hours ? Math.round(week.avg_hours * 10) / 10 : null,
-    avg_quality_7d: week.avg_quality ? Math.round(week.avg_quality * 10) / 10 : null,
-    nights_this_week: week.count,
-    avg_hours_30d: month.avg_hours ? Math.round(month.avg_hours * 10) / 10 : null,
-    avg_quality_30d: month.avg_quality ? Math.round(month.avg_quality * 10) / 10 : null,
+    avg_hours_7d: week?.avg_hours ? Math.round(week.avg_hours * 10) / 10 : null,
+    avg_quality_7d: week?.avg_quality ? Math.round(week.avg_quality * 10) / 10 : null,
+    nights_this_week: week?.count ?? 0,
+    avg_hours_30d: month?.avg_hours ? Math.round(month.avg_hours * 10) / 10 : null,
+    avg_quality_30d: month?.avg_quality ? Math.round(month.avg_quality * 10) / 10 : null,
     streak,
   };
 }
@@ -118,7 +118,7 @@ export function getSleepMoodCorrelation() {
     "SELECT AVG(CASE WHEN dl.mood = 'great' THEN 5 WHEN dl.mood = 'good' THEN 4 WHEN dl.mood = 'okay' THEN 3 WHEN dl.mood = 'bad' THEN 2 WHEN dl.mood = 'terrible' THEN 1 ELSE 3 END) as avg_mood, COUNT(*) as count FROM sleep_logs sl JOIN daily_logs dl ON sl.date = dl.date WHERE sl.duration_hours >= 7"
   ).get();
 
-  if (!shortSleep.count || !goodSleep.count || shortSleep.count < 2 || goodSleep.count < 2) {
+  if (!shortSleep?.count || !goodSleep?.count || shortSleep.count < 2 || goodSleep.count < 2) {
     return { insight: 'Log more sleep entries to see mood correlations', short_sleep_mood: null, good_sleep_mood: null };
   }
 

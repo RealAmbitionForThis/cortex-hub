@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { StatCard } from '@/components/shared/StatCard';
 import { Plus, CalendarClock, AlertTriangle, Clock, Target, Trash2, Bell, BellOff } from 'lucide-react';
 import { IMPORTANT_DATE_TYPES } from '@/lib/constants';
+import { daysUntil } from '@/lib/utils/date';
 import { cn } from '@/lib/utils';
 
 export default function ImportantDatesPage() {
@@ -81,10 +82,6 @@ export default function ImportantDatesPage() {
   if (loading) return <AppShell title="Important Dates"><LoadingSpinner /></AppShell>;
 
   const filtered = filterType === 'all' ? dates : dates.filter(d => d.type === filterType);
-
-  function daysUntil(dateStr) {
-    return Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
-  }
 
   function urgencyColor(days) {
     if (days < 0) return 'text-red-600 dark:text-red-400';

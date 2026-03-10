@@ -8,6 +8,7 @@ export function useChat() {
   const [streaming, setStreaming] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [conversationMeta, setConversationMeta] = useState(null);
+  const [analysisState, setAnalysisState] = useState({ status: 'idle', data: null });
   const abortRef = useRef(null);
 
   const loadConversation = useCallback(async (id) => {
@@ -24,8 +25,15 @@ export function useChat() {
     }
   }, []);
 
-  const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, samplingParams, projectId, systemPromptOverride }) => {
+  const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, samplingParams, projectId, systemPromptOverride, extraAnalyze }) => {
     setStreaming(true);
+
+    // Set analysis state to analyzing if extra-analyze is enabled
+    if (extraAnalyze) {
+      setAnalysisState({ status: 'analyzing', data: null });
+    } else {
+      setAnalysisState({ status: 'idle', data: null });
+    }
 
     const userMsg = { id: crypto.randomUUID(), role: 'user', content: message };
     setMessages((prev) => [...prev, userMsg]);
@@ -67,6 +75,7 @@ export function useChat() {
           samplingParams,
           projectId,
           systemPromptOverride,
+          extraAnalyze: extraAnalyze || false,
         }),
       });
 
@@ -98,7 +107,10 @@ export function useChat() {
 
           try {
             const event = JSON.parse(raw);
-            if (event.type === 'debug') {
+            if (event.type === 'analysis_result') {
+              // Update the analyzer panel with results
+              setAnalysisState({ status: 'complete', data: event.data });
+            } else if (event.type === 'debug') {
               debugInfo = { systemPrompt: event.systemPrompt, messagesCount: event.messagesCount, projectPrompt: event.projectPrompt, model: event.model };
             } else if (event.type === 'debug_tool_round') {
               toolRounds.push({ round: event.round, messages: event.messages });
@@ -147,6 +159,10 @@ export function useChat() {
     } catch {
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Failed to get response. Is Ollama running?', error: true }]);
       toast.error('Failed to get response');
+      // Reset analysis state on error
+      if (extraAnalyze) {
+        setAnalysisState({ status: 'idle', data: null });
+      }
     } finally {
       setStreaming(false);
     }
@@ -210,10 +226,11 @@ export function useChat() {
     setMessages([]);
     setConversationId(null);
     setConversationMeta(null);
+    setAnalysisState({ status: 'idle', data: null });
   }, []);
 
   return {
-    messages, streaming, conversationId, conversationMeta,
+    messages, streaming, conversationId, conversationMeta, analysisState,
     sendMessage, editMessage, deleteMessage, regenerate,
     loadConversation, clearChat, setConversationId,
   };

@@ -1,5 +1,6 @@
 import { success, error } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
+import { parseJsonSafe } from '@/lib/utils/format';
 
 export async function GET() {
   try {
@@ -14,8 +15,8 @@ export async function GET() {
 
     const generations = rows.map((row) => ({
       ...row,
-      input_params: row.input_params ? JSON.parse(row.input_params) : [],
-      output_images: row.output_images ? JSON.parse(row.output_images) : [],
+      input_params: parseJsonSafe(row.input_params, []),
+      output_images: parseJsonSafe(row.output_images, []),
     }));
 
     return success({ generations });

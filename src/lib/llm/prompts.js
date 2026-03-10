@@ -6,7 +6,7 @@ const REASONING_INSTRUCTIONS = {
   [REASONING_LEVELS.HIGH]: 'Think deeply. Analyze thoroughly. Consider edge cases.',
 };
 
-export function buildSystemPrompt({ reasoningLevel = 'medium', memories = [], clusters = [], clusterMemories = [], tools = [], projectPrompt, chatPromptOverride }) {
+export function buildSystemPrompt({ reasoningLevel = 'medium', memories = [], clusters = [], clusterMemories = [], tools = [], projectPrompt, chatPromptOverride, enrichedContext }) {
   const parts = [buildCorePrompt(reasoningLevel)];
 
   // Project-level system prompt
@@ -29,6 +29,28 @@ export function buildSystemPrompt({ reasoningLevel = 'medium', memories = [], cl
 
   if (tools.length) {
     parts.push(buildToolSection(tools));
+  }
+
+  // Inject analysis context when Extra-Analyze is enabled
+  if (enrichedContext) {
+    parts.push(`<analysis_summary>\n${enrichedContext.analysisSummary}\n</analysis_summary>`);
+
+    if (enrichedContext.preFetchedData && Object.keys(enrichedContext.preFetchedData).length > 0) {
+      let preFetchBlock = '<pre_fetched_context>\n';
+      for (const [key, data] of Object.entries(enrichedContext.preFetchedData)) {
+        preFetchBlock += `<${key}>\n${JSON.stringify(data, null, 2)}\n</${key}>\n`;
+      }
+      preFetchBlock += '</pre_fetched_context>';
+      parts.push(preFetchBlock);
+    }
+
+    if (enrichedContext.ambiguityNote) {
+      parts.push(`<ambiguity_warning>\n${enrichedContext.ambiguityNote}\nAsk the user to clarify before executing any tools.\n</ambiguity_warning>`);
+    }
+
+    if (enrichedContext.analysis?.confidence < 50) {
+      parts.push(`<low_confidence_warning>\nThe user's message is ambiguous. Ask for clarification before taking any action. Do NOT assume intent. Do NOT call tools based on guesses.\n</low_confidence_warning>`);
+    }
   }
 
   parts.push(buildRulesSection());

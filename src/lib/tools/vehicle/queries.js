@@ -35,5 +35,7 @@ export function getVehicleCosts(vehicleId) {
   const db = getDb();
   const maintenance = db.prepare('SELECT COALESCE(SUM(cost), 0) as total FROM maintenance_logs WHERE vehicle_id = ?').get(vehicleId);
   const fuel = db.prepare('SELECT COALESCE(SUM(total_cost), 0) as total FROM fuel_logs WHERE vehicle_id = ?').get(vehicleId);
-  return { maintenance: maintenance.total, fuel: fuel.total, total: maintenance.total + fuel.total };
+  const maintenanceTotal = maintenance?.total ?? 0;
+  const fuelTotal = fuel?.total ?? 0;
+  return { maintenance: maintenanceTotal, fuel: fuelTotal, total: maintenanceTotal + fuelTotal };
 }

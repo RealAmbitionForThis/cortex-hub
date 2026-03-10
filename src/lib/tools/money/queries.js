@@ -32,7 +32,9 @@ export function getBalance(period) {
   const db = getDb();
   const income = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE amount > 0 AND date >= ? AND date <= ?').get(start, end);
   const expenses = db.prepare('SELECT COALESCE(SUM(ABS(amount)), 0) as total FROM transactions WHERE amount < 0 AND date >= ? AND date <= ?').get(start, end);
-  return { income: income.total, expenses: expenses.total, net: income.total - expenses.total };
+  const incomeTotal = income?.total ?? 0;
+  const expensesTotal = expenses?.total ?? 0;
+  return { income: incomeTotal, expenses: expensesTotal, net: incomeTotal - expensesTotal };
 }
 
 export function getSpendingByCategory(period) {
@@ -195,15 +197,17 @@ export function getWishlistBudgetInsight() {
   const entertainmentSpent = db.prepare("SELECT COALESCE(SUM(ABS(amount)), 0) as total FROM transactions WHERE amount < 0 AND category = 'entertainment' AND date >= ? AND date <= ?").get(start, end);
   const wishlistTotal = db.prepare('SELECT COALESCE(SUM(target_price), 0) as total FROM wishlist_items WHERE purchased = 0').get();
 
-  const budgetLeft = entertainmentBudget ? entertainmentBudget.monthly_limit - entertainmentSpent.total : null;
+  const spentTotal = entertainmentSpent?.total ?? 0;
+  const wishTotal = wishlistTotal?.total ?? 0;
+  const budgetLeft = entertainmentBudget ? entertainmentBudget.monthly_limit - spentTotal : null;
   return {
-    wishlist_total: wishlistTotal.total,
-    entertainment_budget: entertainmentBudget?.monthly_limit || null,
-    entertainment_spent: entertainmentSpent.total,
+    wishlist_total: wishTotal,
+    entertainment_budget: entertainmentBudget?.monthly_limit ?? null,
+    entertainment_spent: spentTotal,
     entertainment_remaining: budgetLeft,
     insight: budgetLeft !== null
-      ? `You have $${budgetLeft.toFixed(2)} left in entertainment this month. Your wishlist totals $${wishlistTotal.total.toFixed(2)}.`
-      : `Your wishlist totals $${wishlistTotal.total.toFixed(2)}. Set an entertainment budget to track against it.`,
+      ? `You have $${budgetLeft.toFixed(2)} left in entertainment this month. Your wishlist totals $${wishTotal.toFixed(2)}.`
+      : `Your wishlist totals $${wishTotal.toFixed(2)}. Set an entertainment budget to track against it.`,
   };
 }
 

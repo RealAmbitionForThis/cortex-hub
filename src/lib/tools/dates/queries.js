@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { parseTags } from '@/lib/utils/format';
 
 export function addImportantDate({ title, date, type, description, recurring, reminder_days_before, contact_id, tags, notify }) {
   const id = uuidv4();
@@ -24,15 +25,14 @@ export function getImportantDates({ type, upcoming_days, past } = {}) {
     query += " AND date < date('now')";
   }
   query += ' ORDER BY date ASC';
-  return getDb().prepare(query).all(...params).map(d => ({
-    ...d,
-    tags: d.tags ? JSON.parse(d.tags) : [],
-  }));
+  return getDb().prepare(query).all(...params).map(d => {
+    return { ...d, tags: parseTags(d.tags) };
+  });
 }
 
 export function getImportantDate(id) {
   const d = getDb().prepare('SELECT * FROM important_dates WHERE id = ?').get(id);
-  if (d && d.tags) d.tags = JSON.parse(d.tags);
+  if (d) d.tags = parseTags(d.tags);
   return d;
 }
 
@@ -73,11 +73,9 @@ export function getUpcomingReminders() {
     ORDER BY date ASC
   `).all();
 
-  return dates.map(d => ({
-    ...d,
-    tags: d.tags ? JSON.parse(d.tags) : [],
-    days_until: Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24)),
-  }));
+  return dates.map(d => {
+    return { ...d, tags: parseTags(d.tags), days_until: Math.ceil((new Date(d.date) - new Date()) / (1000 * 60 * 60 * 24)) };
+  });
 }
 
 export function markNotified(id) {
@@ -98,9 +96,9 @@ export function getDateStats() {
   ).get();
 
   return {
-    total: total.count,
-    upcoming_30: upcoming30.count,
-    overdue: overdue.count,
+    total: total?.count ?? 0,
+    upcoming_30: upcoming30?.count ?? 0,
+    overdue: overdue?.count ?? 0,
     next: nextDate ? { title: nextDate.title, date: nextDate.date, type: nextDate.type } : null,
   };
 }
@@ -114,8 +112,7 @@ export function getTimeline(year) {
     params.push(`${year}%`);
   }
   query += ' ORDER BY date ASC';
-  return getDb().prepare(query).all(...params).map(d => ({
-    ...d,
-    tags: d.tags ? JSON.parse(d.tags) : [],
-  }));
+  return getDb().prepare(query).all(...params).map(d => {
+    return { ...d, tags: parseTags(d.tags) };
+  });
 }

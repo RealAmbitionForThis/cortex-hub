@@ -2,6 +2,7 @@ import { getDb } from '@/lib/db';
 import { v4 as uuid } from 'uuid';
 import { applyParameters, extractParameters } from '@/lib/comfyui/workflow-manager';
 import { queueWorkflow } from '@/lib/comfyui/client';
+import { parseTags, parseJsonSafe } from '@/lib/utils/format';
 
 export const comfyuiTools = [
   {
@@ -14,7 +15,7 @@ export const comfyuiTools = [
       return {
         workflows: rows.map((r) => ({
           ...r,
-          tags: r.tags ? JSON.parse(r.tags) : [],
+          tags: parseTags(r.tags),
         })),
       };
     },
@@ -46,12 +47,13 @@ export const comfyuiTools = [
       const workflow = db.prepare('SELECT * FROM comfyui_workflows WHERE id = ?').get(workflow_id);
       if (!workflow) return { error: 'Workflow not found' };
 
-      const workflowJson = JSON.parse(workflow.workflow_json);
+      let workflowJson;
+      try { workflowJson = JSON.parse(workflow.workflow_json); } catch (e) { return { error: 'Invalid workflow JSON: ' + e.message }; }
       const modifiedWorkflow = applyParameters(workflowJson, params || []);
 
       const clientId = uuid();
       const result = await queueWorkflow(modifiedWorkflow, clientId);
-      const promptId = result.prompt_id;
+      const promptId = result?.prompt_id;
 
       const generationId = uuid();
       db.prepare(`
@@ -83,9 +85,9 @@ export const comfyuiTools = [
       const workflow = db.prepare('SELECT name, parameters, workflow_json FROM comfyui_workflows WHERE id = ?').get(workflow_id);
       if (!workflow) return { error: 'Workflow not found' };
 
-      let parameters = workflow.parameters ? JSON.parse(workflow.parameters) : [];
+      let parameters = parseJsonSafe(workflow.parameters, []);
       if (parameters.length === 0 && workflow.workflow_json) {
-        parameters = extractParameters(JSON.parse(workflow.workflow_json));
+        try { parameters = extractParameters(JSON.parse(workflow.workflow_json)); } catch { /* malformed workflow JSON */ }
       }
 
       return { workflow_name: workflow.name, parameters };

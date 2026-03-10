@@ -30,6 +30,17 @@ export function parseJsonSafe(str, fallback = null) {
   }
 }
 
+export function parseTags(jsonString) {
+  if (!jsonString) return [];
+  try { return JSON.parse(jsonString); } catch { return []; }
+}
+
+export function getSettingValue(db, key, fallback = null) {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
+  if (!row) return fallback;
+  try { return JSON.parse(row.value); } catch { return fallback; }
+}
+
 export function slugify(text) {
   return text
     .toLowerCase()

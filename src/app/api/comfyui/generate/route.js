@@ -13,12 +13,13 @@ export async function POST(request) {
     const workflow = db.prepare('SELECT * FROM comfyui_workflows WHERE id = ?').get(body.workflow_id);
     if (!workflow) return notFound('Workflow not found');
 
-    const workflowJson = JSON.parse(workflow.workflow_json);
+    let workflowJson;
+    try { workflowJson = JSON.parse(workflow.workflow_json); } catch (e) { return error('Invalid workflow JSON: ' + e.message); }
     const modifiedWorkflow = applyParameters(workflowJson, body.params || []);
 
     const clientId = uuid();
     const result = await queueWorkflow(modifiedWorkflow, clientId);
-    const promptId = result.prompt_id;
+    const promptId = result?.prompt_id;
 
     const generationId = uuid();
     db.prepare(`
