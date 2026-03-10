@@ -31,18 +31,72 @@ export async function POST(request) {
       return success();
     }
 
-    if (!body.name || !body.cron_expression || !body.tool_action) {
-      return badRequest('Name, cron_expression, and tool_action are required');
+    if (!body.name || !body.cron_expression) {
+      return badRequest('Name and cron_expression are required');
     }
 
     const db = getDb();
     const id = uuid();
+    const params = JSON.stringify({
+      project_id: body.project_id || null,
+      tools: body.tools || [],
+    });
+
     db.prepare(`
       INSERT INTO schedules (id, name, cron_expression, action, params, enabled, created_at)
       VALUES (?, ?, ?, ?, ?, 1, ?)
-    `).run(id, body.name, body.cron_expression, body.tool_action, body.params ? JSON.stringify(body.params) : null, new Date().toISOString());
+    `).run(
+      id,
+      body.name,
+      body.cron_expression,
+      body.prompt || body.tool_action || '',
+      params,
+      new Date().toISOString()
+    );
 
     return success({ id });
+  } catch (err) {
+    return error(err.message);
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+
+    if (!body.id) {
+      return badRequest('Schedule id is required');
+    }
+
+    // Handle simple toggle
+    if (body.enabled !== undefined && Object.keys(body).length === 2) {
+      const db = getDb();
+      db.prepare('UPDATE schedules SET enabled = ? WHERE id = ?').run(body.enabled ? 1 : 0, body.id);
+      if (!body.enabled) stopJob(`custom-${body.id}`);
+      return success();
+    }
+
+    // Full update
+    const db = getDb();
+    const params = JSON.stringify({
+      project_id: body.project_id || null,
+      tools: body.tools || [],
+    });
+
+    db.prepare(`
+      UPDATE schedules
+      SET name = ?, cron_expression = ?, action = ?, params = ?, notify_via_ntfy = ?
+      WHERE id = ?
+    `).run(
+      body.name,
+      body.cron_expression,
+      body.prompt || '',
+      params,
+      body.notify_via_ntfy ? 1 : 0,
+      body.id
+    );
+
+    return success();
   } catch (err) {
     return error(err.message);
   }

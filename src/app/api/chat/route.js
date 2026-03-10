@@ -74,14 +74,32 @@ export async function POST(request) {
 
         const analysisModel = getMainModel(db, model);
 
+        // Include recent conversation history so the analyzer can understand references like "log it"
+        const recentHistory = db.prepare(
+          "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 6"
+        ).all(convId).reverse();
+
+        const analysisMessages = [
+          { role: 'system', content: analysisPrompt },
+        ];
+        // Add recent conversation as context (truncated to save tokens)
+        if (recentHistory.length > 0) {
+          const contextSummary = recentHistory.map(m =>
+            `[${m.role}]: ${(m.content || '').slice(0, 300)}`
+          ).join('\n');
+          analysisMessages.push({
+            role: 'user',
+            content: `<recent_conversation>\n${contextSummary}\n</recent_conversation>\n\nAnalyze this new message:\n${message}`,
+          });
+        } else {
+          analysisMessages.push({ role: 'user', content: message });
+        }
+
         // Non-streaming analysis call with low reasoning + timeout
         const analysisResponse = await Promise.race([
           chatCompletion({
             model: analysisModel,
-            messages: [
-              { role: 'system', content: analysisPrompt },
-              { role: 'user', content: message },
-            ],
+            messages: analysisMessages,
             stream: false,
             options: { temperature: 0.1 },
             think: false,

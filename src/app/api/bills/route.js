@@ -1,5 +1,5 @@
 import { success, error, badRequest } from '@/lib/api/response';
-import { addBill, getBills, getUpcomingBills, markBillPaid, addSubscription, getSubscriptions, getSubscriptionTotal, updateSubscriptionUsage, deleteSubscription } from '@/lib/tools/money/queries';
+import { addBill, getBills, getUpcomingBills, markBillPaid, addSubscription, getSubscriptions, getSubscriptionTotal, updateSubscriptionUsage, deleteSubscription, updateBill, deleteBill } from '@/lib/tools/money/queries';
 
 export async function GET(request) {
   try {
@@ -43,6 +43,29 @@ export async function POST(request) {
     if (!body.name || !body.amount) return badRequest('Name and amount required');
     const id = addBill(body);
     return success({ id });
+  } catch (err) {
+    return error(err.message);
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    if (!body.id) return badRequest('Bill ID required');
+    updateBill(body.id, body);
+    return success();
+  } catch (err) {
+    return error(err.message);
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return badRequest('Bill ID required');
+    deleteBill(id);
+    return success();
   } catch (err) {
     return error(err.message);
   }

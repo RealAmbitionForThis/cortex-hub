@@ -127,6 +127,62 @@ export function deleteSubscription(id) {
   getDb().prepare('DELETE FROM bills WHERE id = ? AND is_subscription = 1').run(id);
 }
 
+// --- Transaction CRUD ---
+
+export function updateTransaction(id, { amount, category, description, date }) {
+  const sets = [];
+  const vals = [];
+  if (amount !== undefined) { sets.push('amount = ?'); vals.push(amount); }
+  if (category !== undefined) { sets.push('category = ?'); vals.push(category); }
+  if (description !== undefined) { sets.push('description = ?'); vals.push(description); }
+  if (date !== undefined) { sets.push('date = ?'); vals.push(date); }
+  if (sets.length === 0) return;
+  vals.push(id);
+  getDb().prepare(`UPDATE transactions SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+}
+
+export function deleteTransaction(id) {
+  getDb().prepare('DELETE FROM transactions WHERE id = ?').run(id);
+}
+
+// --- Bill CRUD ---
+
+export function updateBill(id, { name, amount, frequency, due_day, category }) {
+  const sets = [];
+  const vals = [];
+  if (name !== undefined) { sets.push('name = ?'); vals.push(name); }
+  if (amount !== undefined) { sets.push('amount = ?'); vals.push(amount); }
+  if (frequency !== undefined) { sets.push('frequency = ?'); vals.push(frequency); }
+  if (due_day !== undefined) { sets.push('due_day = ?'); vals.push(due_day); }
+  if (category !== undefined) { sets.push('category = ?'); vals.push(category); }
+  if (sets.length === 0) return;
+  vals.push(id);
+  getDb().prepare(`UPDATE bills SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+}
+
+export function deleteBill(id) {
+  getDb().prepare('DELETE FROM bills WHERE id = ?').run(id);
+}
+
+// --- Payroll ---
+
+export function addPayroll({ name, amount, frequency, start_date }) {
+  const id = uuidv4();
+  const description = `Payroll: ${name} (${frequency})`;
+  getDb().prepare(
+    'INSERT INTO transactions (id, amount, category, description, date, source, recurring, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, datetime(\'now\'))'
+  ).run(id, Math.abs(amount), 'income', description, start_date || new Date().toISOString().split('T')[0], 'payroll');
+  return id;
+}
+
+export function getPayroll() {
+  return getDb().prepare("SELECT * FROM transactions WHERE source = 'payroll' AND recurring = 1 ORDER BY created_at DESC").all();
+}
+
+export function deletePayroll(id) {
+  getDb().prepare("DELETE FROM transactions WHERE id = ? AND source = 'payroll' AND recurring = 1").run(id);
+}
+
 // --- Wishlist ---
 
 export function addWishlistItem({ name, target_price, current_price, url, priority, category, notes }) {

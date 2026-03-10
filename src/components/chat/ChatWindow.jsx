@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Send, Settings2, Paperclip, X, FileText, ChevronDown, RotateCcw, BrainCircuit } from 'lucide-react';
+import { Send, Settings2, Paperclip, X, FileText, ChevronDown, RotateCcw, BrainCircuit, Terminal } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { ReasoningLevelPicker } from './ReasoningLevelPicker';
 import { ToolToggle } from './ToolToggle';
@@ -21,6 +21,7 @@ import { SystemPromptEditor } from './SystemPromptEditor';
 import { ClusterSwitcher } from './ClusterSwitcher';
 import { TokenAnalytics } from './TokenAnalytics';
 import { AnalyzerPanel } from './AnalyzerPanel';
+import { DebugTerminalPanel } from './DebugPanel';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { MessageSquare } from 'lucide-react';
 import { SAMPLING_PARAMS, PARAM_GROUPS, getDefaults, buildOllamaOptions } from '@/lib/sampling-params';
@@ -34,6 +35,7 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
   const [chatSettings, setChatSettings] = useState(getDefaults);
   const [projectId, setProjectId] = useState(conversationMeta?.project_id || null);
   const [systemPromptOverride, setSystemPromptOverride] = useState(conversationMeta?.system_prompt_override || '');
+  const [debugOpen, setDebugOpen] = useState(false);
   const [extraAnalyze, setExtraAnalyze] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('extra_analyze_enabled');
@@ -177,8 +179,21 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
             </Button>
             <ProjectSelector conversationId={conversationId} currentProjectId={projectId} onProjectChange={setProjectId} />
             <SystemPromptEditor conversationId={conversationId} value={systemPromptOverride} onChange={setSystemPromptOverride} />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 h-8"
+              onClick={() => setDebugOpen(prev => !prev)}
+              title="Toggle debug terminal"
+            >
+              <Terminal className={cn('h-3.5 w-3.5', debugOpen ? 'text-green-500' : 'text-muted-foreground')} />
+              <span className="text-xs hidden sm:inline">Debug</span>
+            </Button>
             <ChatSettingsPopover settings={chatSettings} onChange={setChatSettings} />
           </div>
+
+          {/* Debug terminal panel */}
+          {debugOpen && <DebugTerminalPanel messages={messages} streaming={streaming} />}
 
           {/* Input row */}
           <div className="flex items-end gap-2">

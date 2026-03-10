@@ -10,7 +10,6 @@ import { MemorySettings } from '@/components/settings/MemorySettings';
 import { ClusterManager } from '@/components/settings/ClusterManager';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { CronManager } from '@/components/settings/CronManager';
-import { ModuleToggles } from '@/components/settings/ModuleToggles';
 import { DocumentSettings } from '@/components/settings/DocumentSettings';
 import { ExportSettings } from '@/components/settings/ExportSettings';
 import { McpServerManager } from '@/components/settings/McpServerManager';
@@ -29,7 +28,6 @@ const TABS = [
   { value: 'clusters', label: 'Clusters' },
   { value: 'notifications', label: 'Notifications' },
   { value: 'schedules', label: 'Schedules' },
-  { value: 'modules', label: 'Modules' },
   { value: 'documents', label: 'Documents' },
   { value: 'exports', label: 'Exports' },
   { value: 'mcp', label: 'MCP' },
@@ -64,7 +62,6 @@ export default function SettingsPage() {
             <TabsContent value="clusters"><ClusterManager /></TabsContent>
             <TabsContent value="notifications"><NotificationSettings settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="schedules"><CronManager /></TabsContent>
-            <TabsContent value="modules"><ModuleToggles settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="documents"><DocumentSettings settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="exports"><ExportSettings settings={settings} onSave={updateSettings} /></TabsContent>
             <TabsContent value="mcp"><McpServerManager /></TabsContent>

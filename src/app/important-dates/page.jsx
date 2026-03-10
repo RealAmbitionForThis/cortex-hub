@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { AppShell } from '@/components/layout/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,7 @@ export default function ImportantDatesPage() {
         recurring: form.recurring || undefined,
       }),
     });
+    toast.success('Date added');
     setShowAdd(false);
     setForm({ title: '', date: '', type: 'other', description: '', recurring: '', reminder_days_before: '7', notify: true });
     fetchAll();
@@ -67,6 +69,7 @@ export default function ImportantDatesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete', id }),
     });
+    toast.success('Date deleted');
     fetchAll();
   }
 
@@ -76,6 +79,7 @@ export default function ImportantDatesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'update', id, notify: !currentNotify }),
     });
+    toast.success(currentNotify ? 'Notifications disabled for this date' : 'Notifications enabled for this date');
     fetchAll();
   }
 

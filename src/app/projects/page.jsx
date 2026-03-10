@@ -251,6 +251,12 @@ export default function ProjectsPage() {
                         <Clock className="h-3 w-3" />
                         {new Date(p.updated_at || p.created_at).toLocaleDateString()}
                       </span>
+                      {p.conversation_count > 0 && (
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="h-3 w-3" />
+                          {p.conversation_count} chat{p.conversation_count !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

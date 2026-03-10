@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
+
+const STUCK_TIMEOUT_MS = 120_000; // 2 minutes
 
 export function useChat() {
   const [messages, setMessages] = useState([]);
@@ -10,6 +12,32 @@ export function useChat() {
   const [conversationMeta, setConversationMeta] = useState(null);
   const [analysisState, setAnalysisState] = useState({ status: 'idle', data: null });
   const abortRef = useRef(null);
+  const stuckTimeoutRef = useRef(null);
+  const stuckWarningShownRef = useRef(false);
+
+  // Clear stuck timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (stuckTimeoutRef.current) clearTimeout(stuckTimeoutRef.current);
+    };
+  }, []);
+
+  function resetStuckTimer() {
+    if (stuckTimeoutRef.current) clearTimeout(stuckTimeoutRef.current);
+    stuckWarningShownRef.current = false;
+    stuckTimeoutRef.current = setTimeout(() => {
+      if (!stuckWarningShownRef.current) {
+        stuckWarningShownRef.current = true;
+        toast.warning('Response seems stuck. You may want to try again.');
+      }
+    }, STUCK_TIMEOUT_MS);
+  }
+
+  function clearStuckTimer() {
+    if (stuckTimeoutRef.current) clearTimeout(stuckTimeoutRef.current);
+    stuckTimeoutRef.current = null;
+    stuckWarningShownRef.current = false;
+  }
 
   const loadConversation = useCallback(async (id) => {
     try {
@@ -90,6 +118,9 @@ export function useChat() {
       let debugInfo = null;
       let toolRounds = [];
 
+      // Start stuck-loading detection
+      resetStuckTimer();
+
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '', thinking: '', streaming: true }]);
 
       while (true) {
@@ -116,11 +147,13 @@ export function useChat() {
               toolRounds.push({ round: event.round, messages: event.messages });
             } else if (event.type === 'thinking') {
               thinkingContent += event.content;
+              resetStuckTimer();
               setMessages((prev) =>
                 prev.map((m) => m.id === assistantId ? { ...m, thinking: thinkingContent } : m)
               );
             } else if (event.type === 'content') {
               assistantContent += event.content;
+              resetStuckTimer();
               setMessages((prev) =>
                 prev.map((m) => m.id === assistantId ? { ...m, content: assistantContent } : m)
               );
@@ -157,13 +190,15 @@ export function useChat() {
         prev.map((m) => m.streaming ? { ...m, streaming: false } : m)
       );
     } catch {
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Failed to get response. Is Ollama running?', error: true }]);
-      toast.error('Failed to get response');
+      const backendHint = 'Failed to get response. Check that your LLM backend (Ollama or llama-server) is running and reachable in Settings > Backend.';
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: backendHint, error: true }]);
+      toast.error('Failed to get response from LLM backend');
       // Reset analysis state on error
       if (extraAnalyze) {
         setAnalysisState({ status: 'idle', data: null });
       }
     } finally {
+      clearStuckTimer();
       setStreaming(false);
     }
   }, [conversationId]);

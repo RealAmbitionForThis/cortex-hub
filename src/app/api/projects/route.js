@@ -5,7 +5,10 @@ import { v4 as uuid } from 'uuid';
 export async function GET() {
   try {
     const db = getDb();
-    const projects = db.prepare('SELECT * FROM projects ORDER BY updated_at DESC').all();
+    const projects = db.prepare(`
+      SELECT p.*, (SELECT COUNT(*) FROM conversations c WHERE c.project_id = p.id) as conversation_count
+      FROM projects p ORDER BY p.updated_at DESC
+    `).all();
     return success({ projects });
   } catch (err) {
     return error(err.message);
