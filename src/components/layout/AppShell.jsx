@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
-export function AppShell({ children, title }) {
+export function AppShell({ children, title, onNewChat: externalNewChat }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
@@ -29,7 +30,13 @@ export function AppShell({ children, title }) {
 
   function handleNewChat() {
     setActiveConversationId(null);
-    router.push('/');
+    if (externalNewChat) externalNewChat();
+    // If already on home page, force refresh by adding timestamp
+    if (pathname === '/') {
+      window.location.href = '/';
+    } else {
+      router.push('/');
+    }
   }
 
   function handleSelectConversation(id) {

@@ -37,16 +37,29 @@ function createCoreTables(db) {
       updated_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      system_prompt TEXT,
+      icon TEXT DEFAULT '📂',
+      color TEXT DEFAULT '#6366f1',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS conversations (
       id TEXT PRIMARY KEY,
       title TEXT,
       model TEXT NOT NULL,
       cluster_id TEXT,
+      project_id TEXT,
+      system_prompt_override TEXT,
       reasoning_level TEXT DEFAULT 'medium',
       parent_conversation_id TEXT,
       pinned INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS messages (

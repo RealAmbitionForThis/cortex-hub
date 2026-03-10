@@ -10,7 +10,7 @@ import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments, enabledTools } = body;
+    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, temperature, contextWindow } = body;
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model);
@@ -31,11 +31,21 @@ export async function POST(request) {
       }
     }
 
+    // Fetch project system prompt and per-chat override
+    const conv = db.prepare('SELECT project_id, system_prompt_override FROM conversations WHERE id = ?').get(convId);
+    let projectPrompt = null;
+    if (conv?.project_id) {
+      const project = db.prepare('SELECT system_prompt FROM projects WHERE id = ?').get(conv.project_id);
+      projectPrompt = project?.system_prompt || null;
+    }
+
     const systemPrompt = buildSystemPrompt({
       reasoningLevel: reasoningLevel || 'medium',
       memories,
       clusters: activeClusters,
       tools,
+      projectPrompt,
+      chatPromptOverride: conv?.system_prompt_override || null,
     });
 
     const history = getMessageHistory(db, convId);
@@ -52,7 +62,11 @@ export async function POST(request) {
 
     const { stream, send, close, error: streamError } = createSSEStream();
 
-    streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel });
+    const ollamaOptions = {};
+    if (temperature !== undefined) ollamaOptions.temperature = temperature;
+    if (contextWindow) ollamaOptions.num_ctx = contextWindow;
+
+    streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions });
 
     return new Response(stream, {
       headers: {
@@ -66,9 +80,9 @@ export async function POST(request) {
   }
 }
 
-async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel }) {
+async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions }) {
   try {
-    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true });
+    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions });
     let fullContent = '';
     let toolCalls = [];
 
@@ -84,7 +98,7 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
     }
 
     if (toolCalls.length > 0) {
-      await handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel });
+      await handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools });
       return;
     }
 
@@ -97,43 +111,68 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
   }
 }
 
-async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel }) {
+async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools }) {
+  const MAX_TOOL_ROUNDS = 10;
   try {
-    const toolResults = [];
+    let currentMessages = [...messages];
+    let currentToolCalls = toolCalls;
+    let currentContent = fullContent;
 
-    for (const tc of toolCalls) {
-      const name = tc.function?.name;
-      const args = tc.function?.arguments || {};
-      send({ type: 'tool_call', name, arguments: args });
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const toolResults = [];
 
-      const result = await executeTool(name, args);
-      send({ type: 'tool_result', name, result });
-      toolResults.push({ role: 'tool', content: JSON.stringify(result) });
-    }
+      for (const tc of currentToolCalls) {
+        const name = tc.function?.name;
+        const args = tc.function?.arguments || {};
+        send({ type: 'tool_call', name, arguments: args });
 
-    if (fullContent) {
-      saveAssistantMessage(db, convId, fullContent, JSON.stringify(toolCalls), reasoningLevel);
-    }
-
-    const updatedMessages = [
-      ...messages,
-      { role: 'assistant', content: fullContent, tool_calls: toolCalls },
-      ...toolResults,
-    ];
-
-    const res = await chatCompletion({ model: mainModel, messages: updatedMessages, stream: true });
-    let finalContent = '';
-
-    for await (const chunk of parseOllamaStream(res)) {
-      if (chunk.message?.content) {
-        finalContent += chunk.message.content;
-        send({ type: 'content', content: chunk.message.content, conversationId: convId });
+        const result = await executeTool(name, args);
+        send({ type: 'tool_result', name, result });
+        toolResults.push({ role: 'tool', content: JSON.stringify(result) });
       }
-      if (chunk.done) break;
+
+      if (currentContent) {
+        saveAssistantMessage(db, convId, currentContent, JSON.stringify(currentToolCalls), reasoningLevel);
+      }
+
+      currentMessages = [
+        ...currentMessages,
+        { role: 'assistant', content: currentContent, tool_calls: currentToolCalls },
+        ...toolResults,
+      ];
+
+      const res = await chatCompletion({ model: mainModel, messages: currentMessages, tools, stream: true, options: ollamaOptions });
+      let nextContent = '';
+      let nextToolCalls = [];
+
+      for await (const chunk of parseOllamaStream(res)) {
+        if (chunk.message?.content) {
+          nextContent += chunk.message.content;
+          send({ type: 'content', content: chunk.message.content, conversationId: convId });
+        }
+        if (chunk.message?.tool_calls) {
+          nextToolCalls = chunk.message.tool_calls;
+        }
+        if (chunk.done) break;
+      }
+
+      // If no more tool calls, we're done
+      if (nextToolCalls.length === 0) {
+        saveAssistantMessage(db, convId, nextContent, null, reasoningLevel);
+        updateConversationTitle(db, convId, nextContent);
+        send({ type: 'done', conversationId: convId });
+        close();
+        return;
+      }
+
+      // Otherwise, loop again with the new tool calls
+      currentToolCalls = nextToolCalls;
+      currentContent = nextContent;
     }
 
-    saveAssistantMessage(db, convId, finalContent, null, reasoningLevel);
-    updateConversationTitle(db, convId, finalContent);
+    // Hit max rounds — finalize with whatever we have
+    send({ type: 'content', content: '\n\n[Reached maximum tool call depth]', conversationId: convId });
+    saveAssistantMessage(db, convId, currentContent + '\n\n[Reached maximum tool call depth]', null, reasoningLevel);
     send({ type: 'done', conversationId: convId });
     close();
   } catch (err) {

@@ -12,9 +12,9 @@ export function addTask({ title, description, priority, due_date, module: taskMo
 export function listTasks({ status, priority, module: taskModule } = {}) {
   let query = 'SELECT * FROM tasks WHERE 1=1';
   const params = [];
-  if (status) { query += ' AND status = ?'; params.push(status); }
-  if (priority) { query += ' AND priority = ?'; params.push(priority); }
-  if (taskModule) { query += ' AND module = ?'; params.push(taskModule); }
+  if (status && status.trim()) { query += ' AND status = ?'; params.push(status.trim()); }
+  if (priority && priority.trim()) { query += ' AND priority = ?'; params.push(priority.trim()); }
+  if (taskModule && taskModule.trim() && taskModule.trim() !== 'tasks') { query += ' AND module = ?'; params.push(taskModule.trim()); }
   query += ' ORDER BY CASE priority WHEN \'critical\' THEN 0 WHEN \'high\' THEN 1 WHEN \'medium\' THEN 2 ELSE 3 END, due_date ASC NULLS LAST';
   return getDb().prepare(query).all(...params);
 }
