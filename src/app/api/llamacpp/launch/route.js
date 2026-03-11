@@ -186,9 +186,12 @@ export async function POST(request) {
     addLog(`[cortex] Launching: ${binary} ${cliArgs.join(' ')}`);
     addLog(`[cortex] Port: ${port}, Host: ${host}`);
 
+    const isWindows = process.platform === 'win32';
     const child = spawn(binary, cliArgs, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
+      shell: isWindows,
+      windowsHide: true,
     });
 
     serverProcess = child;
