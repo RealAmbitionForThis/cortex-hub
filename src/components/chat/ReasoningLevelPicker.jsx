@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Brain } from 'lucide-react';
@@ -12,41 +12,7 @@ const LEVELS = [
   { value: 'high', label: 'Think+', color: 'text-red-500', description: 'Extended thinking' },
 ];
 
-// Cache model capability results so we don't hit the API repeatedly
-const capabilityCache = new Map();
-
-async function checkModelThinking(modelName) {
-  if (!modelName) return false;
-  if (capabilityCache.has(modelName)) return capabilityCache.get(modelName);
-
-  try {
-    const res = await fetch(`/api/models?name=${encodeURIComponent(modelName)}`);
-    if (res.ok) {
-      const data = await res.json();
-      const supports = data.supportsThinking ?? false;
-      capabilityCache.set(modelName, supports);
-      return supports;
-    }
-  } catch {
-    // If API fails, don't show the picker — we can't verify support
-  }
-  capabilityCache.set(modelName, false);
-  return false;
-}
-
-export function ReasoningLevelPicker({ value, onChange, modelName }) {
-  const [supported, setSupported] = useState(null);
-
-  useEffect(() => {
-    setSupported(null);
-    checkModelThinking(modelName).then(result => {
-      setSupported(result);
-    });
-  }, [modelName]);
-
-  // Don't render until we've checked, and don't render if unsupported
-  if (supported !== true) return null;
-
+export function ReasoningLevelPicker({ value, onChange }) {
   const current = LEVELS.find((l) => l.value === value) || LEVELS[1];
 
   return (

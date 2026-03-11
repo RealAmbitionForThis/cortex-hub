@@ -51,12 +51,14 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   }
 
   // llama-server supports thinking natively via reasoning_content in the response.
-  // Map the think boolean to reasoning_budget: true → -1 (unrestricted), false → 0 (disabled).
+  // Map think param to reasoning_budget. Accepts booleans or gpt-oss style strings.
   // The server must be launched with --think deepseek (or similar) for this to have effect.
-  if (think === true) {
+  if (think === true || think === 'high') {
     body.reasoning_budget = -1;
-  } else if (think === false) {
+  } else if (think === false || think === 'low') {
     body.reasoning_budget = 0;
+  } else if (think === 'medium') {
+    body.reasoning_budget = -1;
   }
 
   const res = await fetch(`${LLAMACPP_URL()}/v1/chat/completions`, {
