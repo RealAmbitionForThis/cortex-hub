@@ -1,4 +1,4 @@
-import { success, error, badRequest } from '@/lib/api/response';
+import { success, badRequest, withHandler } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 
 const SETTINGS_KEY = 'llamacpp_launch_configs';
@@ -18,54 +18,42 @@ function saveConfigs(configs) {
 }
 
 // GET — List all saved configs
-export async function GET() {
-  try {
-    return success({ configs: getConfigs() });
-  } catch (err) {
-    return error(err.message);
-  }
-}
+export const GET = withHandler(async () => {
+  return success({ configs: getConfigs() });
+});
 
 // POST — Save a new config
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { name, modelPath, args } = body;
+export const POST = withHandler(async (request) => {
+  const body = await request.json();
+  const { name, modelPath, args } = body;
 
-    if (!name) return badRequest('Config name is required');
+  if (!name) return badRequest('Config name is required');
 
-    const configs = getConfigs();
+  const configs = getConfigs();
 
-    // Replace existing config with same name, or add new
-    const idx = configs.findIndex((c) => c.name === name);
-    const config = { name, modelPath, args, savedAt: new Date().toISOString() };
+  // Replace existing config with same name, or add new
+  const idx = configs.findIndex((c) => c.name === name);
+  const config = { name, modelPath, args, savedAt: new Date().toISOString() };
 
-    if (idx >= 0) {
-      configs[idx] = config;
-    } else {
-      configs.push(config);
-    }
-
-    saveConfigs(configs);
-    return success({ config });
-  } catch (err) {
-    return error(err.message);
+  if (idx >= 0) {
+    configs[idx] = config;
+  } else {
+    configs.push(config);
   }
-}
+
+  saveConfigs(configs);
+  return success({ config });
+});
 
 // DELETE — Delete a config by name
-export async function DELETE(request) {
-  try {
-    const body = await request.json();
-    const { name } = body;
+export const DELETE = withHandler(async (request) => {
+  const body = await request.json();
+  const { name } = body;
 
-    if (!name) return badRequest('Config name is required');
+  if (!name) return badRequest('Config name is required');
 
-    const configs = getConfigs().filter((c) => c.name !== name);
-    saveConfigs(configs);
+  const configs = getConfigs().filter((c) => c.name !== name);
+  saveConfigs(configs);
 
-    return success({ deleted: name });
-  } catch (err) {
-    return error(err.message);
-  }
-}
+  return success({ deleted: name });
+});

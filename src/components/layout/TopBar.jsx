@@ -99,7 +99,7 @@ export function TopBar({ title, onMenuClick }) {
   const displayModels = isLlamaCpp
     ? [
         ...llamaModels.map(m => ({ name: m, source: 'llama-server' })),
-        ...models.map(m => ({ ...m, source: 'ollama' })),
+        ...models.filter(m => !llamaModels.includes(m.name)).map(m => ({ ...m, source: 'llama-server' })),
       ]
     : models.map(m => ({ ...m, source: 'ollama' }));
   // Deduplicate by name

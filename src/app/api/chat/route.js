@@ -7,7 +7,8 @@ import { buildSystemPrompt } from '@/lib/llm/prompts';
 import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 import { buildAnalysisPrompt } from '@/lib/prompts/analysis-prompt';
-import { processAnalysis, getAvailableModules, parseAnalysisResponse } from '@/lib/analysis/process-analysis';
+import { processAnalysis, getAvailableModules } from '@/lib/analysis/process-analysis';
+import { detectModelFamily, buildOllamaThinkParam, buildLlamacppThinkParams } from '@/lib/llm/thinking';
 import { getSettingValue } from '@/lib/utils/format';
 
 const DEFAULT_MODEL = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
@@ -20,6 +21,9 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const { conversationId, message, model, reasoningLevel, attachments, enabledTools, samplingParams, projectId, systemPromptOverride, extraAnalyze } = body;
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      return errorResponse('Message is required', 400);
+    }
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model, projectId, systemPromptOverride);
@@ -214,16 +218,21 @@ export async function POST(request) {
 
 async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions }) {
   try {
-    // Map reasoning level to the think parameter.
-    // gpt-oss models use string values ("low"/"medium"/"high"), everything else uses boolean.
-    const isGptOss = (mainModel || '').toLowerCase().includes('gpt-oss');
+    // Detect model family and build the correct thinking params
+    const backend = getBackend();
+    const family = detectModelFamily(mainModel);
     let thinkParam;
-    if (isGptOss) {
-      thinkParam = reasoningLevel || 'medium';
+    let extraBodyParams = {};
+
+    if (backend === 'llamacpp') {
+      // llama-server: each model family uses different API params
+      extraBodyParams = buildLlamacppThinkParams(family, reasoningLevel);
     } else {
-      thinkParam = reasoningLevel === 'low' ? false : true;
+      // Ollama: uses native think param, handles model specifics internally
+      thinkParam = buildOllamaThinkParam(family, reasoningLevel);
     }
-    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions, think: thinkParam });
+
+    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions, think: thinkParam, extraBody: extraBodyParams });
     let fullContent = '';
     let thinkingContent = '';
     let toolCalls = [];

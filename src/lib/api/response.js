@@ -15,3 +15,17 @@ export function notFound(message = 'Not found') {
 export function badRequest(message = 'Bad request') {
   return error(message, 400);
 }
+
+/**
+ * Wrap a route handler with automatic error handling.
+ * Eliminates the need for try/catch in every route.
+ */
+export function withHandler(handler) {
+  return async (...args) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      return error(err.message);
+    }
+  };
+}

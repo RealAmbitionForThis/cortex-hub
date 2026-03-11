@@ -5,13 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatDate } from '@/lib/utils/date';
 import { cn } from '@/lib/utils';
-
-const PRIORITY_COLORS = {
-  critical: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-green-500',
-};
+import { PRIORITY_COLORS } from '@/lib/constants';
 
 export function TaskBacklog({ tasks = [], onComplete, onEdit }) {
   return (

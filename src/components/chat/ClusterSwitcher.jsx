@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
@@ -14,20 +15,29 @@ export function ClusterSwitcher() {
     fetch('/api/clusters')
       .then((r) => r.json())
       .then((d) => setClusters(d.clusters || []))
-      .catch(() => {});
+      .catch(() => toast.error('Failed to load clusters'));
   }, [open]);
 
   const activeCount = clusters.filter((c) => c.active).length;
 
   async function toggleCluster(id, active) {
-    await fetch(`/api/clusters/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: active ? 1 : 0 }),
-    });
-    setClusters((prev) =>
-      prev.map((c) => c.id === id ? { ...c, active: active ? 1 : 0 } : c)
+    const prev = clusters;
+    // Optimistic update
+    setClusters((c) =>
+      c.map((cl) => cl.id === id ? { ...cl, active: active ? 1 : 0 } : cl)
     );
+    try {
+      const res = await fetch(`/api/clusters/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: active ? 1 : 0 }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Rollback on failure
+      setClusters(prev);
+      toast.error('Failed to toggle cluster');
+    }
   }
 
   return (

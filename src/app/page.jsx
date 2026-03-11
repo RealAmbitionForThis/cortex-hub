@@ -31,6 +31,7 @@ function ChatPage() {
         messages={chat.messages}
         streaming={chat.streaming}
         onSend={chat.sendMessage}
+        onStop={chat.stopStreaming}
         onEdit={chat.editMessage}
         onDelete={chat.deleteMessage}
         onRegenerate={chat.regenerate}

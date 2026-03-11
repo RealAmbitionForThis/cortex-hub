@@ -1,42 +1,26 @@
-import { success, error } from '@/lib/api/response';
+import { success, withHandler } from '@/lib/api/response';
 import { getMcpServers, addMcpServer, updateMcpServer, deleteMcpServer } from '@/lib/mcp/registry';
 
-export async function GET() {
-  try {
-    return success({ servers: getMcpServers() });
-  } catch (err) {
-    return error(err.message);
-  }
-}
+export const GET = withHandler(async () => {
+  return success({ servers: getMcpServers() });
+});
 
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const id = addMcpServer(body);
-    return success({ id });
-  } catch (err) {
-    return error(err.message);
-  }
-}
+export const POST = withHandler(async (request) => {
+  const body = await request.json();
+  const id = addMcpServer(body);
+  return success({ id });
+});
 
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const { id, ...updates } = body;
-    updateMcpServer(id, updates);
-    return success();
-  } catch (err) {
-    return error(err.message);
-  }
-}
+export const PUT = withHandler(async (request) => {
+  const body = await request.json();
+  const { id, ...updates } = body;
+  updateMcpServer(id, updates);
+  return success();
+});
 
-export async function DELETE(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    deleteMcpServer(id);
-    return success();
-  } catch (err) {
-    return error(err.message);
-  }
-}
+export const DELETE = withHandler(async (request) => {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  deleteMcpServer(id);
+  return success();
+});

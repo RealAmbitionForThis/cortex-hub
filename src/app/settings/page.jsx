@@ -18,19 +18,44 @@ import { AppearanceSettings } from '@/components/settings/AppearanceSettings';
 import { ComfyUISettings } from '@/components/settings/ComfyUISettings';
 import { BackendSettings } from '@/components/settings/BackendSettings';
 
-const TABS = [
-  { value: 'backend', label: 'Backend' },
-  { value: 'models', label: 'Models' },
-  { value: 'memory', label: 'Memory' },
-  { value: 'clusters', label: 'Clusters' },
-  { value: 'notifications', label: 'Notifications' },
-  { value: 'schedules', label: 'Schedules' },
-  { value: 'documents', label: 'Documents' },
-  { value: 'exports', label: 'Exports' },
-  { value: 'mcp', label: 'MCP' },
-  { value: 'comfyui', label: 'ComfyUI' },
-  { value: 'data', label: 'Data' },
-  { value: 'appearance', label: 'Appearance' },
+const TAB_GROUPS = [
+  {
+    label: 'General',
+    tabs: [
+      { value: 'backend', label: 'Backend' },
+      { value: 'models', label: 'Models' },
+      { value: 'appearance', label: 'Appearance' },
+    ],
+  },
+  {
+    label: 'AI & Processing',
+    tabs: [
+      { value: 'memory', label: 'Memory' },
+      { value: 'documents', label: 'Documents' },
+    ],
+  },
+  {
+    label: 'Integrations',
+    tabs: [
+      { value: 'mcp', label: 'MCP Servers' },
+      { value: 'comfyui', label: 'ComfyUI' },
+      { value: 'notifications', label: 'Notifications' },
+    ],
+  },
+  {
+    label: 'Automation',
+    tabs: [
+      { value: 'clusters', label: 'Clusters' },
+      { value: 'schedules', label: 'Schedules' },
+    ],
+  },
+  {
+    label: 'Data',
+    tabs: [
+      { value: 'exports', label: 'Exports' },
+      { value: 'data', label: 'Data Management' },
+    ],
+  },
 ];
 
 export default function SettingsPage() {
@@ -41,13 +66,20 @@ export default function SettingsPage() {
   return (
     <AppShell title="Settings">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        <Tabs defaultValue="models" className="flex flex-col lg:flex-row gap-6">
+        <Tabs defaultValue="backend" className="flex flex-col lg:flex-row gap-6">
           <ScrollArea className="w-full lg:w-48 shrink-0">
-            <TabsList className="flex lg:flex-col lg:h-auto lg:bg-transparent lg:space-y-1 overflow-x-auto lg:overflow-visible">
-              {TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} className="lg:w-full lg:justify-start">
-                  {tab.label}
-                </TabsTrigger>
+            <TabsList className="flex lg:flex-col lg:h-auto lg:bg-transparent lg:space-y-0 overflow-x-auto lg:overflow-visible">
+              {TAB_GROUPS.map((group, gi) => (
+                <div key={group.label} className={gi > 0 ? 'mt-4' : ''}>
+                  <p className="hidden lg:block px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {group.label}
+                  </p>
+                  {group.tabs.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value} className="lg:w-full lg:justify-start">
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </div>
               ))}
             </TabsList>
           </ScrollArea>

@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { parseJsonSafe } from '@/lib/utils/format';
 
 function parseMetadata(jsonStr) {
@@ -8,7 +8,7 @@ function parseMetadata(jsonStr) {
 
 export function addDocument({ title, type, content, file_path, metadata }) {
   const db = getDb();
-  const id = uuid();
+  const id = uuidv4();
   const now = new Date().toISOString();
   db.prepare(`
     INSERT INTO documents (id, title, type, content, file_path, metadata, created_at)

@@ -32,7 +32,7 @@ function getGlobalMemories(module) {
 }
 
 function getClusterMemories(clusterIds) {
-  if (!clusterIds.length) return [];
+  if (!clusterIds || !clusterIds.length) return [];
   const db = getDb();
   const placeholders = clusterIds.map(() => '?').join(',');
   return db.prepare(

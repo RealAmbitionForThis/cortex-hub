@@ -1,55 +1,43 @@
-import { success, error } from '@/lib/api/response';
+import { success, withHandler } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { textToVector, vectorToBuffer } from '@/lib/memory/embeddings';
 
-export async function GET(request) {
-  try {
-    const db = getDb();
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
-    const moduleFilter = searchParams.get('module');
+export const GET = withHandler(async (request) => {
+  const db = getDb();
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get('type');
+  const moduleFilter = searchParams.get('module');
 
-    let query = 'SELECT id, memory_type, category, module, content, confidence, protected, created_at, updated_at FROM memories WHERE 1=1';
-    const params = [];
+  let query = 'SELECT id, memory_type, category, module, content, confidence, protected, created_at, updated_at FROM memories WHERE 1=1';
+  const params = [];
 
-    if (type) { query += ' AND memory_type = ?'; params.push(type); }
-    if (moduleFilter) { query += ' AND module = ?'; params.push(moduleFilter); }
-    query += ' ORDER BY updated_at DESC LIMIT 200';
+  if (type) { query += ' AND memory_type = ?'; params.push(type); }
+  if (moduleFilter) { query += ' AND module = ?'; params.push(moduleFilter); }
+  query += ' ORDER BY updated_at DESC LIMIT 200';
 
-    const memories = db.prepare(query).all(...params);
-    return success({ memories });
-  } catch (err) {
-    return error(err.message);
-  }
-}
+  const memories = db.prepare(query).all(...params);
+  return success({ memories });
+});
 
-export async function POST(request) {
-  try {
-    const db = getDb();
-    const body = await request.json();
-    const { content, category, module: memModule, memory_type, protected: isProtected } = body;
+export const POST = withHandler(async (request) => {
+  const db = getDb();
+  const body = await request.json();
+  const { content, category, module: memModule, memory_type, protected: isProtected } = body;
 
-    const embedding = await textToVector(content);
-    const id = uuidv4();
+  const embedding = await textToVector(content);
+  const id = uuidv4();
 
-    db.prepare(
-      'INSERT INTO memories (id, memory_type, category, module, content, embedding, protected, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))'
-    ).run(id, memory_type || 'persistent', category || 'fact', memModule || 'general', content, embedding ? vectorToBuffer(embedding) : null, isProtected ? 1 : 0);
+  db.prepare(
+    'INSERT INTO memories (id, memory_type, category, module, content, embedding, protected, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))'
+  ).run(id, memory_type || 'persistent', category || 'fact', memModule || 'general', content, embedding ? vectorToBuffer(embedding) : null, isProtected ? 1 : 0);
 
-    return success({ id });
-  } catch (err) {
-    return error(err.message);
-  }
-}
+  return success({ id });
+});
 
-export async function DELETE(request) {
-  try {
-    const db = getDb();
-    const { id } = await request.json();
-    db.prepare('DELETE FROM memories WHERE id = ?').run(id);
-    return success();
-  } catch (err) {
-    return error(err.message);
-  }
-}
+export const DELETE = withHandler(async (request) => {
+  const db = getDb();
+  const { id } = await request.json();
+  db.prepare('DELETE FROM memories WHERE id = ?').run(id);
+  return success();
+});

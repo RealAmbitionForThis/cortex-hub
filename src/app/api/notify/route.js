@@ -1,47 +1,39 @@
-import { success, error } from '@/lib/api/response';
+import { success, withHandler } from '@/lib/api/response';
 import { sendNotification } from '@/lib/notify/ntfy';
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
-export async function GET() {
-  try {
+export const GET = withHandler(async () => {
+  const db = getDb();
+  const notifications = db.prepare(
+    'SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50'
+  ).all();
+  const unread = db.prepare(
+    'SELECT COUNT(*) as count FROM notifications WHERE read = 0'
+  ).get();
+  return success({ notifications, unread: unread.count });
+});
+
+export const POST = withHandler(async (request) => {
+  const body = await request.json();
+
+  if (body.action === 'mark_read') {
     const db = getDb();
-    const notifications = db.prepare(
-      'SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50'
-    ).all();
-    const unread = db.prepare(
-      'SELECT COUNT(*) as count FROM notifications WHERE read = 0'
-    ).get();
-    return success({ notifications, unread: unread.count });
-  } catch (err) {
-    return error(err.message);
-  }
-}
-
-export async function POST(request) {
-  try {
-    const body = await request.json();
-
-    if (body.action === 'mark_read') {
-      const db = getDb();
-      if (body.id) {
-        db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').run(body.id);
-      } else {
-        db.prepare('UPDATE notifications SET read = 1 WHERE read = 0').run();
-      }
-      return success();
+    if (body.id) {
+      db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').run(body.id);
+    } else {
+      db.prepare('UPDATE notifications SET read = 1 WHERE read = 0').run();
     }
-
-    const result = await sendNotification(body);
-
-    const db = getDb();
-    db.prepare(`
-      INSERT INTO notifications (id, title, message, type, read, created_at)
-      VALUES (?, ?, ?, ?, 0, ?)
-    `).run(uuid(), body.title || 'Notification', body.message, body.type || 'info', new Date().toISOString());
-
-    return success(result);
-  } catch (err) {
-    return error(err.message);
+    return success();
   }
-}
+
+  const result = await sendNotification(body);
+
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO notifications (id, title, message, type, read, created_at)
+    VALUES (?, ?, ?, ?, 0, ?)
+  `).run(uuidv4(), body.title || 'Notification', body.message, body.type || 'info', new Date().toISOString());
+
+  return success(result);
+});

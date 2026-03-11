@@ -1,19 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { THINKING_PROFILES, detectModelFamily } from '@/lib/llm/thinking';
 
-const LEVELS = [
-  { value: 'low', label: 'No Thinking', color: 'text-green-500', description: 'Thinking disabled' },
-  { value: 'medium', label: 'Think', color: 'text-yellow-500', description: 'Standard thinking' },
-  { value: 'high', label: 'Think+', color: 'text-red-500', description: 'Extended thinking' },
-];
+export function ReasoningLevelPicker({ value, onChange, modelName }) {
+  const profile = useMemo(() => {
+    const family = detectModelFamily(modelName);
+    return THINKING_PROFILES[family];
+  }, [modelName]);
 
-export function ReasoningLevelPicker({ value, onChange }) {
-  const current = LEVELS.find((l) => l.value === value) || LEVELS[1];
+  const current = profile.levels.find((l) => l.value === value)
+    || profile.levels.find((l) => l.value === profile.defaultLevel)
+    || profile.levels[0];
+
+  // If the current value doesn't exist in this profile's levels, reset to default
+  const validValues = profile.levels.map((l) => l.value);
+  if (!validValues.includes(value)) {
+    queueMicrotask(() => onChange(profile.defaultLevel));
+  }
 
   return (
     <Popover>
@@ -23,9 +31,11 @@ export function ReasoningLevelPicker({ value, onChange }) {
           <span className="text-xs hidden sm:inline">{current.label}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-48 p-1" align="start" side="top">
-        <p className="text-xs font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">Thinking Level</p>
-        {LEVELS.map((level) => (
+      <PopoverContent className="w-52 p-1" align="start" side="top">
+        <p className="text-[10px] font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">
+          Thinking — {profile.label}
+        </p>
+        {profile.levels.map((level) => (
           <button
             key={level.value}
             onClick={() => onChange(level.value)}
