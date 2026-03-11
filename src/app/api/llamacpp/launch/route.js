@@ -234,15 +234,43 @@ export async function POST(request) {
             if (line.includes('server is listening on') || line.includes('HTTP server listening')) {
               sendEvent({ type: 'ready', port, host });
 
-              // Auto-update llamacpp_url setting
+              // Auto-update llamacpp_url, cortex_backend, and main_model settings
               try {
                 const db = getDb();
                 const url = `http://127.0.0.1:${port}`;
                 db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(
                   'llamacpp_url', JSON.stringify(url)
                 );
+                db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(
+                  'cortex_backend', JSON.stringify('llamacpp')
+                );
                 addLog(`[cortex] Auto-configured llamacpp_url = ${url}`);
-                sendEvent({ type: 'config_updated', llamacpp_url: url });
+                addLog(`[cortex] Auto-configured backend = llamacpp`);
+
+                // Query /v1/models to get loaded model name and auto-set main_model
+                const autoSetModel = async () => {
+                  for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+                      const modelsRes = await fetch(`${url}/v1/models`);
+                      if (modelsRes.ok) {
+                        const modelsData = await modelsRes.json();
+                        const modelName = modelsData.data?.[0]?.id;
+                        if (modelName) {
+                          db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(
+                            'main_model', JSON.stringify(modelName)
+                          );
+                          addLog(`[cortex] Auto-configured main_model = ${modelName}`);
+                          sendEvent({ type: 'config_updated', llamacpp_url: url, main_model: modelName, cortex_backend: 'llamacpp' });
+                          return;
+                        }
+                      }
+                    } catch { /* retry */ }
+                  }
+                  // If all retries fail, still send config_updated without model
+                  sendEvent({ type: 'config_updated', llamacpp_url: url, cortex_backend: 'llamacpp' });
+                };
+                autoSetModel();
               } catch { /* non-critical */ }
             }
           }

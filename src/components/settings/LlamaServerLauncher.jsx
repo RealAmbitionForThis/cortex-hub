@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -328,6 +328,12 @@ export function LlamaServerLauncher({ settings, onSave }) {
               toast.success(`llama-server ready on port ${event.port}`);
               checkStatus();
             }
+            if (event.type === 'config_updated') {
+              if (event.main_model) {
+                toast.success(`Model auto-set: ${event.main_model}`);
+                onSave({ main_model: event.main_model, cortex_backend: 'llamacpp' });
+              }
+            }
             if (event.type === 'error') {
               toast.error(event.message);
             }
@@ -645,10 +651,44 @@ export function LlamaServerLauncher({ settings, onSave }) {
             <Label className="text-xs">Chat Template (--chat-template)</Label>
             <Select value={args.chatTemplate} onValueChange={(v) => updateArg('chatTemplate', v)}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {['auto', 'chatml', 'llama3', 'deepseek3', 'phi4', 'gemma', 'mistral-v3', 'command-r'].map(t => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
+              <SelectContent className="max-h-80">
+                <SelectItem value="auto">auto</SelectItem>
+                <SelectGroup>
+                  <SelectLabel>Popular</SelectLabel>
+                  {['chatml', 'llama3', 'llama4', 'deepseek3', 'gemma', 'phi4', 'mistral-v3', 'command-r', 'gpt-oss'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Qwen / Chinese</SelectLabel>
+                  {['bailing', 'bailing-think', 'bailing2', 'chatglm3', 'chatglm4', 'glmedge', 'kimi-k2', 'megrez', 'minicpm', 'hunyuan-dense', 'hunyuan-moe', 'pangu-embedded'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Meta / Llama</SelectLabel>
+                  {['llama2', 'llama2-sys', 'llama2-sys-bos', 'llama2-sys-strip'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>DeepSeek</SelectLabel>
+                  {['deepseek', 'deepseek2'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Mistral</SelectLabel>
+                  {['mistral-v1', 'mistral-v3-tekken', 'mistral-v7', 'mistral-v7-tekken'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Others</SelectLabel>
+                  {['exaone3', 'exaone4', 'exaone-moe', 'falcon3', 'gigachat', 'granite', 'grok-2', 'monarch', 'openchat', 'orion', 'phi3', 'rwkv-world', 'seed_oss', 'smolvlm', 'solar-open', 'vicuna', 'vicuna-orca', 'yandex', 'zephyr'].map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -666,6 +706,7 @@ export function LlamaServerLauncher({ settings, onSave }) {
                 <SelectItem value="deepseek-legacy">DeepSeek Legacy</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground">For Qwen/Bailing models, use Jinja + bailing-think template instead. Thinking is controlled via reasoning_budget in the API.</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">LoRA Path (--lora)</Label>
