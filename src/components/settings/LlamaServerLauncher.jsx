@@ -332,7 +332,8 @@ export function LlamaServerLauncher({ settings, onSave }) {
               toast.error(event.message);
             }
             if (event.type === 'exit') {
-              toast.error(`Server exited (code ${event.code})`);
+              const detail = event.lastLog ? `\n${event.lastLog}` : '';
+              toast.error(`Server exited (code ${event.code})${detail}`, { duration: 10000 });
               checkStatus();
             }
           } catch { /* skip */ }
