@@ -320,10 +320,39 @@ function ParamTags({ param, value, onChange }) {
   );
 }
 
+function ParamText({ param, value, onChange }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{param.label}</Label>
+      <Input
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={param.default || ''}
+        className="h-7 text-xs"
+      />
+      <p className="text-[10px] text-muted-foreground">{param.desc}</p>
+    </div>
+  );
+}
+
+function ParamToggle({ param, value, onChange }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="space-y-0.5">
+        <Label className="text-xs">{param.label}</Label>
+        <p className="text-[10px] text-muted-foreground">{param.desc}</p>
+      </div>
+      <Switch checked={!!value} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
 function ParamControl({ param, value, onChange }) {
   if (param.type === 'slider') return <ParamSlider param={param} value={value} onChange={onChange} />;
   if (param.type === 'number') return <ParamNumber param={param} value={value} onChange={onChange} />;
   if (param.type === 'select') return <ParamSelect param={param} value={value} onChange={onChange} />;
+  if (param.type === 'toggle') return <ParamToggle param={param} value={value} onChange={onChange} />;
+  if (param.type === 'text')   return <ParamText param={param} value={value} onChange={onChange} />;
   if (param.type === 'tags')   return <ParamTags param={param} value={value} onChange={onChange} />;
   return null;
 }

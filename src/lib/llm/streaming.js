@@ -28,8 +28,9 @@ export function createSSEStream() {
 
 // Parses OpenAI-compatible SSE stream (used by llama-server) and normalizes
 // chunks to the same shape as parseOllamaStream for the chat route.
-// Note: llama.cpp doesn't support Ollama's `think` parameter, so `message.thinking`
-// is never set — the chat route handles this gracefully via optional chaining.
+// llama-server returns thinking/reasoning in delta.reasoning_content for
+// models that produce <think> blocks. We map this to message.thinking
+// so the chat route handles it the same way as Ollama's think parameter.
 // OpenAI API also doesn't provide eval_duration/total_duration timing fields —
 // the chat route falls back to 0 for these via || 0 checks.
 export async function* parseOpenAIStream(response) {
@@ -87,6 +88,12 @@ export async function* parseOpenAIStream(response) {
           chunk.message.content = delta.content;
         }
 
+        // llama-server returns thinking in reasoning_content field
+        // Map to message.thinking for consistent handling with Ollama
+        if (delta.reasoning_content) {
+          chunk.message.thinking = delta.reasoning_content;
+        }
+
         // Accumulate streamed tool call deltas
         if (delta.tool_calls) {
           for (const tc of delta.tool_calls) {
@@ -100,7 +107,7 @@ export async function* parseOpenAIStream(response) {
           }
         }
 
-        if (delta.content) {
+        if (delta.content || delta.reasoning_content) {
           yield chunk;
         }
       } catch {

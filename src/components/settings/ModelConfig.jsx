@@ -230,6 +230,32 @@ function SettingsParamControl({ param, value, onChange }) {
     );
   }
 
+  if (param.type === 'toggle') {
+    return (
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label>{param.label}</Label>
+          <p className="text-xs text-muted-foreground">{param.desc}</p>
+        </div>
+        <Switch checked={!!value} onCheckedChange={onChange} />
+      </div>
+    );
+  }
+
+  if (param.type === 'text') {
+    return (
+      <div className="space-y-2">
+        <Label>{param.label}</Label>
+        <Input
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={param.default || ''}
+        />
+        <p className="text-xs text-muted-foreground">{param.desc}</p>
+      </div>
+    );
+  }
+
   if (param.type === 'tags') {
     return (
       <div className="space-y-2">

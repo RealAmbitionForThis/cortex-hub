@@ -31,19 +31,29 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   if (options.frequency_penalty !== undefined) body.frequency_penalty = options.frequency_penalty;
   if (options.presence_penalty !== undefined) body.presence_penalty = options.presence_penalty;
 
+  // Penalties — additional
+  if (options.tfs_z !== undefined) body.tfs_z = options.tfs_z;
+
   // Advanced — llama-server supports these natively
   if (options.mirostat !== undefined) body.mirostat = options.mirostat;
   if (options.mirostat_tau !== undefined) body.mirostat_tau = options.mirostat_tau;
   if (options.mirostat_eta !== undefined) body.mirostat_eta = options.mirostat_eta;
   if (options.dynatemp_range !== undefined) body.dynatemp_range = options.dynatemp_range;
+  if (options.cache_prompt !== undefined) body.cache_prompt = options.cache_prompt;
 
   if (tools?.length) {
     body.tools = tools;
     body.tool_choice = 'auto';
   }
 
-  // llama-server doesn't have a native think parameter — include reasoning instruction if needed
-  // The system prompt already handles reasoning level, so this is a no-op for llama.cpp
+  // llama-server supports thinking natively via reasoning_content in the response.
+  // Map the think boolean to reasoning_budget: true → -1 (unrestricted), false → 0 (disabled).
+  // The server must be launched with --think deepseek (or similar) for this to have effect.
+  if (think === true) {
+    body.reasoning_budget = -1;
+  } else if (think === false) {
+    body.reasoning_budget = 0;
+  }
 
   const res = await fetch(`${LLAMACPP_URL}/v1/chat/completions`, {
     method: 'POST',

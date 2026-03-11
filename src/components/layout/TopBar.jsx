@@ -29,7 +29,7 @@ export function TopBar({ title, onMenuClick }) {
   const fetchModels = useCallback(async () => {
     try {
       const [modelsRes, settingsRes] = await Promise.all([
-        fetch('/api/ollama/models').then(r => r.json()).catch(() => ({ models: [] })),
+        fetch('/api/models').then(r => r.json()).catch(() => ({ models: [] })),
         fetch('/api/settings').then(r => r.json()).catch(() => ({ settings: {} })),
       ]);
       const list = modelsRes.models || [];
