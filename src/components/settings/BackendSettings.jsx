@@ -20,14 +20,12 @@ export function BackendSettings({ settings, onSave }) {
     try { const raw = settings.llamacpp_models; return raw ? JSON.parse(raw) : []; } catch { return []; }
   });
   const [newModelName, setNewModelName] = useState('');
-  const [llamaDefaultCtx, setLlamaDefaultCtx] = useState(settings.llamacpp_default_ctx || 4096);
 
   useEffect(() => {
     setBackend(settings.cortex_backend || 'ollama');
     setOllamaUrl(settings.ollama_url || 'http://localhost:11434');
     setLlamacppUrl(settings.llamacpp_url || 'http://localhost:8080');
     setEmbeddingUrl(settings.cortex_embedding_url || '');
-    setLlamaDefaultCtx(settings.llamacpp_default_ctx || 4096);
     try { const raw = settings.llamacpp_models; setLlamaModels(raw ? JSON.parse(raw) : []); } catch { setLlamaModels([]); }
   }, [settings]);
 
@@ -71,7 +69,6 @@ export function BackendSettings({ settings, onSave }) {
       updates.llamacpp_url = llamacppUrl;
       updates.cortex_embedding_url = embeddingUrl;
       updates.llamacpp_models = JSON.stringify(llamaModels);
-      updates.llamacpp_default_ctx = llamaDefaultCtx;
     }
     onSave(updates);
     toast.success('Backend settings saved');
@@ -125,21 +122,6 @@ export function BackendSettings({ settings, onSave }) {
             <Input value={embeddingUrl} onChange={(e) => setEmbeddingUrl(e.target.value)} placeholder="http://localhost:8080" />
             <p className="text-xs text-muted-foreground">
               Fallback endpoint for embeddings if llama-server was not started with --embedding. Leave empty to try the main llama-server URL first.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Default Context Window</Label>
-            <Input
-              type="number"
-              value={llamaDefaultCtx}
-              onChange={(e) => setLlamaDefaultCtx(parseInt(e.target.value) || 4096)}
-              min={512}
-              max={131072}
-              step={512}
-            />
-            <p className="text-xs text-muted-foreground">
-              Default context window size for llama-server. This overrides the chat settings default.
             </p>
           </div>
 

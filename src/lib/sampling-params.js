@@ -6,6 +6,8 @@
 // Parameters marked [llama.cpp] are silently ignored by Ollama (removed in current versions)
 // but fully supported by llama-server's /v1/chat/completions endpoint.
 
+import { DEFAULT_CONTEXT_WINDOW } from './constants';
+
 export const SAMPLING_PARAMS = {
   // --- Sampling ---
   temperature:      { key: 'temperature',      label: 'Temperature',       type: 'slider', default: 0.8,  min: 0,    max: 2,      step: 0.05, group: 'sampling',   desc: 'Lower = focused, higher = creative (default 0.8)' },
@@ -15,7 +17,7 @@ export const SAMPLING_PARAMS = {
   typical_p:        { key: 'typical_p',         label: 'Typical P',         type: 'slider', default: 1.0,  min: 0,    max: 1,      step: 0.05, group: 'sampling',   desc: 'Locally typical sampling threshold (1.0 = disabled)' },
 
   // --- Generation ---
-  num_ctx:          { key: 'num_ctx',           label: 'Context Window',    type: 'slider', default: 4096, min: 1024, max: 131072, step: 1024, group: 'generation', desc: 'Max tokens for context (Ollama default 2048)' },
+  num_ctx:          { key: 'num_ctx',           label: 'Context Window',    type: 'slider', default: DEFAULT_CONTEXT_WINDOW, min: 1024, max: 131072, step: 1024, group: 'generation', desc: 'Max tokens for context (Ollama default 2048)' },
   num_predict:      { key: 'num_predict',       label: 'Max Tokens',        type: 'number', default: -1,   min: -1,   max: 32768,  step: 1,    group: 'generation', desc: 'Max tokens to generate (-1 = unlimited)' },
   seed:             { key: 'seed',              label: 'Seed',              type: 'number', default: -1,   min: -1,   max: 999999, step: 1,    group: 'generation', desc: 'Reproducibility seed (-1 = random)' },
   stop:             { key: 'stop',              label: 'Stop Sequences',    type: 'tags',   default: [],                            group: 'generation', desc: 'Stop generation when these strings appear' },

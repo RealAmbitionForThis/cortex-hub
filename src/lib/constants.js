@@ -8,6 +8,7 @@ export const BCRYPT_SALT_ROUNDS = 10;
 export const DEFAULT_MAIN_MODEL = 'gpt-oss:20b';
 export const DEFAULT_VISION_MODEL = 'qwen2.5-vl:7b';
 export const DEFAULT_EMBEDDING_MODEL = 'nomic-embed-text';
+export const DEFAULT_CONTEXT_WINDOW = 4096;
 
 export const REASONING_LEVELS = {
   LOW: 'low',
