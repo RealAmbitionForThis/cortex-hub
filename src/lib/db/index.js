@@ -18,13 +18,6 @@ export function getDb() {
   return db;
 }
 
-export function closeDb() {
-  if (db) {
-    db.close();
-    db = null;
-  }
-}
-
 /**
  * Build and run a dynamic UPDATE query from an object of updates.
  * Only fields in `allowedFields` are applied; undefined values are skipped.

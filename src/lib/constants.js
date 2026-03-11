@@ -205,6 +205,13 @@ export const WARRANTY_CLAIM_STATUSES = [
   'resolved',
 ];
 
+export const PRIORITY_COLORS = {
+  critical: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-yellow-500',
+  low: 'bg-green-500',
+};
+
 export const IMPORTANT_DATE_TYPES = [
   'passport_expiry',
   'license_expiry',

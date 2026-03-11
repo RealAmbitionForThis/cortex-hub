@@ -30,12 +30,3 @@ export async function sendBillReminder(bill) {
     tags: ['money_with_wings'],
   });
 }
-
-export async function sendTaskReminder(task) {
-  return sendNotification({
-    title: `Task Overdue: ${task.title}`,
-    message: task.description || 'This task is past its due date',
-    priority: 3,
-    tags: ['warning'],
-  });
-}

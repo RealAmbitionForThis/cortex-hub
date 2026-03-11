@@ -7,7 +7,7 @@ import { buildSystemPrompt } from '@/lib/llm/prompts';
 import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 import { buildAnalysisPrompt } from '@/lib/prompts/analysis-prompt';
-import { processAnalysis, getAvailableModules, parseAnalysisResponse } from '@/lib/analysis/process-analysis';
+import { processAnalysis, getAvailableModules } from '@/lib/analysis/process-analysis';
 import { detectModelFamily, buildOllamaThinkParam, buildLlamacppThinkParams } from '@/lib/llm/thinking';
 import { getSettingValue } from '@/lib/utils/format';
 

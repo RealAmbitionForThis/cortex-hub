@@ -96,26 +96,6 @@ export function detectModelFamily(modelName) {
   return 'generic';
 }
 
-/**
- * Detect model family from llama-server chat template string.
- * Used as a fallback when model name alone isn't conclusive.
- */
-export function detectFromTemplate(chatTemplate) {
-  if (!chatTemplate) return null;
-  for (const profile of Object.values(THINKING_PROFILES)) {
-    if (profile.templateMatch && profile.templateMatch.test(chatTemplate)) return profile.id;
-  }
-  return null;
-}
-
-/**
- * Get the thinking profile for a model.
- */
-export function getThinkingProfile(modelName) {
-  const family = detectModelFamily(modelName);
-  return THINKING_PROFILES[family];
-}
-
 // ---------------------------------------------------------------------------
 // Parameter mapping — converts (family, level) → backend-specific params
 // ---------------------------------------------------------------------------

@@ -3,14 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { PRIORITY_COLORS } from '@/lib/constants';
 
 const COLUMNS = [
   { key: 'todo', label: 'To Do', color: 'border-t-blue-500' },
   { key: 'in_progress', label: 'In Progress', color: 'border-t-yellow-500' },
   { key: 'done', label: 'Done', color: 'border-t-green-500' },
 ];
-
-const PRIORITY_COLORS = { critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-yellow-500', low: 'bg-green-500' };
 
 export function TaskKanban({ tasks = [], onStatusChange }) {
   return (
