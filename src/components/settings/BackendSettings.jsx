@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusDot } from '@/components/shared/StatusDot';
 import { OllamaModelManager } from '@/components/settings/OllamaModelManager';
 import { SystemDashboard } from '@/components/shared/SystemDashboard';
+import { LlamaServerLauncher } from '@/components/settings/LlamaServerLauncher';
 import { RefreshCw, Plus, X } from 'lucide-react';
 
 export function BackendSettings({ settings, onSave }) {
@@ -175,6 +176,13 @@ export function BackendSettings({ settings, onSave }) {
       )}
 
       <Button onClick={handleSave}>Save</Button>
+
+      {/* llama-server Launcher — only for llamacpp backend */}
+      {backend === 'llamacpp' && (
+        <div className="border-t pt-6">
+          <LlamaServerLauncher settings={settings} onSave={onSave} />
+        </div>
+      )}
 
       {/* Model Management — only for Ollama backend */}
       {backend === 'ollama' && (
