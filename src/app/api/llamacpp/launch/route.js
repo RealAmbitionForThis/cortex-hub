@@ -71,7 +71,8 @@ function buildArgs(modelPath, args) {
   if (args.ctx) flags.push('-c', String(args.ctx));
   if (args.port) flags.push('--port', String(args.port));
   if (args.host) flags.push('--host', args.host);
-  if (args.fa) flags.push('-fa');
+  if (args.fa) flags.push('-fa', 'on');
+
   if (args.np && args.np > 1) flags.push('-np', String(args.np));
 
   // Memory & Performance
@@ -100,7 +101,9 @@ function buildArgs(modelPath, args) {
   // Model & Template
   if (args.chatTemplate && args.chatTemplate !== 'auto') flags.push('--chat-template', args.chatTemplate);
   if (args.jinja) flags.push('--jinja');
-  if (args.thinkMode && args.thinkMode !== 'none') flags.push('--think', args.thinkMode);
+  if (args.thinkMode && args.thinkMode !== 'auto') flags.push('--think', args.thinkMode);
+  if (args.reasoningBudget !== undefined && args.reasoningBudget !== -1) flags.push('--reasoning-budget', String(args.reasoningBudget));
+  if (args.chatTemplateKwargs && args.chatTemplateKwargs.trim()) flags.push('--chat-template-kwargs', args.chatTemplateKwargs.trim());
   if (args.lora) flags.push('--lora', args.lora);
 
   // Embedding
@@ -112,7 +115,9 @@ function buildArgs(modelPath, args) {
   if (args.ropeFreqBase) flags.push('--rope-freq-base', String(args.ropeFreqBase));
   if (args.ropeFreqScale) flags.push('--rope-freq-scale', String(args.ropeFreqScale));
 
-  return flags;
+    flags.push('--verbose');
+
+    return flags;
 }
 
 // GET — Check server status

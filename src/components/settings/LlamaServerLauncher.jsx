@@ -25,7 +25,7 @@ const DEFAULT_ARGS = {
   splitMode: 'layer', mainGpu: 0, tensorSplit: '',
   cacheTypeK: 'f16', cacheTypeV: 'f16',
   apiKey: '', metrics: false, noWebui: false,
-  chatTemplate: 'auto', jinja: true, thinkMode: 'none', lora: '',
+  chatTemplate: 'auto', jinja: true, thinkMode: 'auto', reasoningBudget: -1, chatTemplateKwargs: '', lora: '',
   embedding: false, pooling: 'none',
   ropeScaling: 'none', ropeFreqBase: 0, ropeFreqScale: 0,
 };
@@ -652,7 +652,7 @@ export function LlamaServerLauncher({ settings, onSave }) {
             <Select value={args.chatTemplate} onValueChange={(v) => updateArg('chatTemplate', v)}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent className="max-h-80">
-                <SelectItem value="auto">auto</SelectItem>
+                <SelectItem value="auto">auto (use GGUF embedded)</SelectItem>
                 <SelectGroup>
                   <SelectLabel>Popular</SelectLabel>
                   {['chatml', 'llama3', 'llama4', 'deepseek3', 'gemma', 'phi4', 'mistral-v3', 'command-r', 'gpt-oss'].map(t => (
@@ -660,8 +660,14 @@ export function LlamaServerLauncher({ settings, onSave }) {
                   ))}
                 </SelectGroup>
                 <SelectGroup>
-                  <SelectLabel>Qwen / Chinese</SelectLabel>
-                  {['bailing', 'bailing-think', 'bailing2', 'chatglm3', 'chatglm4', 'glmedge', 'kimi-k2', 'megrez', 'minicpm', 'hunyuan-dense', 'hunyuan-moe', 'pangu-embedded'].map(t => (
+                  <SelectLabel>Qwen / Alibaba</SelectLabel>
+                  {['chatml', 'bailing', 'bailing-think', 'bailing2', 'pangu-embedded'].map(t => (
+                    <SelectItem key={`qwen-${t}`} value={t}>{t}{t === 'chatml' ? ' (Qwen2/2.5)' : t === 'bailing' ? ' (Qwen3+)' : t === 'bailing-think' ? ' (Qwen3+ think)' : ''}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Chinese Models</SelectLabel>
+                  {['chatglm3', 'chatglm4', 'glmedge', 'kimi-k2', 'megrez', 'minicpm', 'hunyuan-dense', 'hunyuan-moe'].map(t => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectGroup>
@@ -691,22 +697,45 @@ export function LlamaServerLauncher({ settings, onSave }) {
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground">For Qwen3/3.5 models: use Jinja (below) — it reads the template from the GGUF automatically. No need to pick a template manually.</p>
           </div>
           <div className="flex items-center justify-between">
             <Label className="text-xs">Jinja Templates (--jinja)</Label>
             <Switch checked={args.jinja} onCheckedChange={(v) => updateArg('jinja', v)} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Think Mode (--think)</Label>
+            <Label className="text-xs">Reasoning Format (--think)</Label>
             <Select value={args.thinkMode} onValueChange={(v) => updateArg('thinkMode', v)}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="deepseek">DeepSeek</SelectItem>
-                <SelectItem value="deepseek-legacy">DeepSeek Legacy</SelectItem>
+                <SelectItem value="auto">Auto (detect from model)</SelectItem>
+                <SelectItem value="none">None (raw output, no parsing)</SelectItem>
+                <SelectItem value="deepseek">DeepSeek / Qwen (→ reasoning_content)</SelectItem>
+                <SelectItem value="deepseek-legacy">Legacy (keep &lt;think&gt; tags in content)</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[10px] text-muted-foreground">For Qwen/Bailing models, use Jinja + bailing-think template instead. Thinking is controlled via reasoning_budget in the API.</p>
+            <p className="text-[10px] text-muted-foreground">How &lt;think&gt; blocks are parsed. "DeepSeek / Qwen" extracts thinking into reasoning_content. Works for Qwen3, Qwen3.5, DeepSeek R1, QwQ, etc.</p>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Reasoning Budget (--reasoning-budget)</Label>
+            <Select value={String(args.reasoningBudget)} onValueChange={(v) => updateArg('reasoningBudget', Number(v))}>
+              <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-1">Unrestricted (default)</SelectItem>
+                <SelectItem value="0">Disabled (no thinking)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">Set to "Disabled" to hard-disable thinking at server level. Works with Qwen3, QwQ, DeepSeek R1 distills, etc.</p>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Chat Template Kwargs (--chat-template-kwargs)</Label>
+            <Input
+              value={args.chatTemplateKwargs}
+              onChange={(e) => updateArg('chatTemplateKwargs', e.target.value)}
+              placeholder='{"enable_thinking": false}'
+              className="font-mono text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground">JSON passed to Jinja template. Qwen: {'{"enable_thinking": false}'}. GPT-OSS: {'{"reasoning_effort": "low"}'}</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">LoRA Path (--lora)</Label>
@@ -715,8 +744,12 @@ export function LlamaServerLauncher({ settings, onSave }) {
         </Section>
 
         <Section title="Embedding">
+          <p className="text-[10px] text-muted-foreground -mt-2 mb-2">Embedding mode turns this into a dedicated vector embedding server (like nomic-embed-text). It disables chat/completion endpoints and only exposes /v1/embeddings. Used for RAG, semantic search, and memory similarity. Load an embedding model (not a chat model) when enabled.</p>
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Embedding Mode (--embedding)</Label>
+            <div>
+              <Label className="text-xs">Embedding Mode (--embedding)</Label>
+              <p className="text-[10px] text-muted-foreground">Restricts server to embedding-only. Chat endpoints will be disabled.</p>
+            </div>
             <Switch checked={args.embedding} onCheckedChange={(v) => updateArg('embedding', v)} />
           </div>
           <div className="space-y-1">
@@ -724,11 +757,14 @@ export function LlamaServerLauncher({ settings, onSave }) {
             <Select value={args.pooling} onValueChange={(v) => updateArg('pooling', v)}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {['none', 'mean', 'cls', 'last', 'rank'].map(t => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
+                <SelectItem value="none">none</SelectItem>
+                <SelectItem value="mean">mean (most common)</SelectItem>
+                <SelectItem value="cls">cls</SelectItem>
+                <SelectItem value="last">last (Qwen3-Embedding)</SelectItem>
+                <SelectItem value="rank">rank</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground">How token embeddings are combined. "mean" for most models (nomic, bge, e5). "last" for Qwen3-Embedding.</p>
           </div>
         </Section>
 
