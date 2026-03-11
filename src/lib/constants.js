@@ -53,15 +53,6 @@ export const MAINTENANCE_TYPES = [
   'other',
 ];
 
-export const INTERACTION_TYPES = [
-  'call',
-  'email',
-  'meeting',
-  'text',
-  'social',
-  'other',
-];
-
 export const SLEEP_QUALITY_LABELS = [
   'Terrible',
   'Poor',
@@ -117,14 +108,6 @@ export const WARRANTY_TYPES = [
   'accidental',
   'lifetime',
   'limited',
-];
-
-export const WARRANTY_CLAIM_STATUSES = [
-  'pending',
-  'submitted',
-  'approved',
-  'denied',
-  'resolved',
 ];
 
 export const PRIORITY_COLORS = {

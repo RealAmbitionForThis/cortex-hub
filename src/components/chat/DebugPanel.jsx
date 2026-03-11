@@ -9,8 +9,8 @@ import { cn } from '@/lib/utils';
  * Toggled by a Terminal icon button in the controls row.
  */
 export function DebugTerminalPanel({ messages, streaming }) {
-  if (process.env.NODE_ENV === 'production') return null;
   const [activeSection, setActiveSection] = useState('server');
+  if (process.env.NODE_ENV === 'production') return null;
 
   // Extract debug info from the most recent assistant message that has it
   const lastAssistant = [...messages].reverse().find(
