@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Bell } from 'lucide-react';
+import { DEFAULT_NTFY_URL } from '@/lib/constants';
 
 export function NotificationSettings({ settings, onSave }) {
-  const [ntfyUrl, setNtfyUrl] = useState(settings.ntfy_url || 'https://ntfy.sh');
+  const [ntfyUrl, setNtfyUrl] = useState(settings.ntfy_url || DEFAULT_NTFY_URL);
   const [ntfyTopic, setNtfyTopic] = useState(settings.ntfy_topic || '');
   const [notifyBills, setNotifyBills] = useState(settings.notify_bills !== false);
   const [notifyTasks, setNotifyTasks] = useState(settings.notify_tasks !== false);
@@ -17,8 +18,12 @@ export function NotificationSettings({ settings, onSave }) {
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
-    setNtfyUrl(settings.ntfy_url || 'https://ntfy.sh');
+    setNtfyUrl(settings.ntfy_url || DEFAULT_NTFY_URL);
     setNtfyTopic(settings.ntfy_topic || '');
+    setNotifyBills(settings.notify_bills !== false);
+    setNotifyTasks(settings.notify_tasks !== false);
+    setNotifyMaintenance(settings.notify_maintenance !== false);
+    setNotifyFollowups(settings.notify_followups !== false);
   }, [settings]);
 
   async function handleTest() {

@@ -1,6 +1,6 @@
 import { success, error, badRequest } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-import { spawn, execSync } from 'child_process';
+import { spawn } from 'child_process';
 import fs from 'fs';
 
 // Module-level state — survives across requests, lost on server restart
@@ -54,16 +54,7 @@ function findBinary() {
       ];
 
   for (const bin of candidates) {
-    try {
-      if (isWindows) {
-        execSync(`where ${bin}`, { timeout: 3000, stdio: 'ignore' });
-      } else {
-        execSync(`which ${bin} 2>/dev/null || test -x ${bin}`, { timeout: 3000 });
-      }
-      return bin;
-    } catch { /* not found */ }
-
-    // Also check if the path exists directly on disk
+    // Check if the path exists directly on disk (safe, no shell execution)
     try {
       if (fs.existsSync(bin)) return bin;
     } catch { /* not found */ }

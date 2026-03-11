@@ -12,7 +12,15 @@ export const POST = withHandler(async (request) => {
 
   if (!files || files.length === 0) return badRequest('No files provided');
 
-  const targetDir = path.join(UPLOAD_DIR, category);
+  // Prevent path traversal
+  if (category.includes('..') || path.isAbsolute(category)) {
+    return badRequest('Invalid category');
+  }
+
+  const targetDir = path.resolve(UPLOAD_DIR, category);
+  if (!targetDir.startsWith(UPLOAD_DIR)) {
+    return badRequest('Invalid category');
+  }
   await mkdir(targetDir, { recursive: true });
 
   const uploaded = [];

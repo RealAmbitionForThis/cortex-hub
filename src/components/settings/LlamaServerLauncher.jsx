@@ -238,12 +238,12 @@ export function LlamaServerLauncher({ settings, onSave }) {
   const [configName, setConfigName] = useState('');
   const [log, setLog] = useState([]);
   const logRef = useRef(null);
-  const [binaryPath, setBinaryPath] = useState(() => {
-    try { return settings.llamacpp_binary_path ? JSON.parse(settings.llamacpp_binary_path) : ''; } catch { return ''; }
-  });
+  const [binaryPath, setBinaryPath] = useState(settings.llamacpp_binary_path || '');
 
   const savedDirs = (() => {
-    try { return JSON.parse(settings.llamacpp_model_dirs || '[]'); } catch { return []; }
+    const raw = settings.llamacpp_model_dirs;
+    if (Array.isArray(raw)) return raw;
+    try { return JSON.parse(raw || '[]'); } catch { return []; }
   })();
 
   const checkStatus = useCallback(async () => {
@@ -283,7 +283,7 @@ export function LlamaServerLauncher({ settings, onSave }) {
   }
 
   function handleSaveDirs(dirs) {
-    onSave({ llamacpp_model_dirs: JSON.stringify(dirs) });
+    onSave({ llamacpp_model_dirs: dirs });
   }
 
   async function handleLaunch() {
@@ -442,8 +442,8 @@ export function LlamaServerLauncher({ settings, onSave }) {
         <Input
           value={binaryPath}
           onChange={(e) => setBinaryPath(e.target.value)}
-          onBlur={() => { if (binaryPath !== (settings.llamacpp_binary_path ? JSON.parse(settings.llamacpp_binary_path) : '')) { onSave({ llamacpp_binary_path: JSON.stringify(binaryPath) }); toast.success('Binary path saved'); checkStatus(); } }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { onSave({ llamacpp_binary_path: JSON.stringify(binaryPath) }); toast.success('Binary path saved'); checkStatus(); } }}
+          onBlur={() => { if (binaryPath !== (settings.llamacpp_binary_path || '')) { onSave({ llamacpp_binary_path: binaryPath }); toast.success('Binary path saved'); checkStatus(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { onSave({ llamacpp_binary_path: binaryPath }); toast.success('Binary path saved'); checkStatus(); } }}
           placeholder="/path/to/llama-server"
           className="font-mono text-sm"
         />

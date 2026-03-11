@@ -12,6 +12,7 @@ export function ClusterSwitcher() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!open) return;
     fetch('/api/clusters')
       .then((r) => r.json())
       .then((d) => setClusters(d.clusters || []))

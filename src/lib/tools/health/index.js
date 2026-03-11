@@ -17,7 +17,7 @@ export const healthTools = [
     name: 'health.get_stats',
     description: 'Get nutrition and workout summary',
     parameters: { type: 'object', properties: { period: { type: 'string' } } },
-    handler: () => getHealthStats(),
+    handler: ({ period }) => getHealthStats(period),
   },
   {
     name: 'health.set_goal',

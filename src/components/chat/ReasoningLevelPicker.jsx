@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Brain } from 'lucide-react';
@@ -18,10 +18,12 @@ export function ReasoningLevelPicker({ value, onChange, modelName }) {
     || profile.levels[0];
 
   // If the current value doesn't exist in this profile's levels, reset to default
-  const validValues = profile.levels.map((l) => l.value);
-  if (!validValues.includes(value)) {
-    queueMicrotask(() => onChange(profile.defaultLevel));
-  }
+  const validValues = useMemo(() => profile.levels.map((l) => l.value), [profile]);
+  useEffect(() => {
+    if (!validValues.includes(value)) {
+      onChange(profile.defaultLevel);
+    }
+  }, [value, validValues, profile.defaultLevel, onChange]);
 
   return (
     <Popover>

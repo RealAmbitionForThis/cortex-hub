@@ -1,4 +1,5 @@
 import { resolveOllamaUrl as getOllamaUrl } from './urls';
+import { DEFAULT_MAIN_MODEL } from '@/lib/constants';
 
 export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think }) {
   // keep_alive is a top-level Ollama param, not inside options
@@ -67,7 +68,7 @@ export async function checkConnection() {
 }
 
 export async function generateCompletion({ model, prompt, stream = false, images }) {
-  const body = { model: model || process.env.CORTEX_DEFAULT_MAIN_MODEL || 'llama3', prompt, stream };
+  const body = { model: model || process.env.CORTEX_DEFAULT_MAIN_MODEL || DEFAULT_MAIN_MODEL, prompt, stream };
   if (images) body.images = images;
 
   const res = await fetch(`${getOllamaUrl()}/api/generate`, {

@@ -14,9 +14,16 @@ export function getDb() {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
-  runMigrations(db);
+  try {
+    runMigrations(db);
+  } catch (err) {
+    db = null;
+    throw err;
+  }
   return db;
 }
+
+process.on('exit', () => db?.close());
 
 /**
  * Build and run a dynamic UPDATE query from an object of updates.

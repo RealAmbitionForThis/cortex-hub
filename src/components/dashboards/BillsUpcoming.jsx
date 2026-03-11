@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils/format';
 import { daysUntil } from '@/lib/utils/date';
-import { CheckCircle, Clock, Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle, Pencil, Trash2 } from 'lucide-react';
 
 export function BillsUpcoming({ bills = [], onMarkPaid, onEditBill, onDeleteBill }) {
   if (bills.length === 0) {

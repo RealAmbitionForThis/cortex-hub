@@ -18,18 +18,16 @@ export const notifyTools = [
   },
   {
     name: 'notify.reminder',
-    description: 'Set a reminder notification',
+    description: 'Send a reminder notification immediately (scheduling not yet supported)',
     parameters: {
       type: 'object',
       properties: {
         title: { type: 'string' },
         message: { type: 'string' },
-        delay: { type: 'string', description: 'e.g. "30m", "1h", "2d"' },
       },
       required: ['message'],
     },
-    handler: async ({ title, message, delay }) => {
-      // For immediate send; scheduled via cron in Phase 19
+    handler: async ({ title, message }) => {
       return sendNotification({ title: title || 'Reminder', message, priority: 4, tags: ['bell'] });
     },
   },

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { Download, Upload, Trash2, AlertTriangle } from 'lucide-react';
+import { Download, Trash2, AlertTriangle } from 'lucide-react';
 
 export function DataManagement() {
   const [resetTarget, setResetTarget] = useState(null);

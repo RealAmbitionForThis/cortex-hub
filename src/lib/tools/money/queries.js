@@ -1,6 +1,7 @@
 import { getDb, updateRow } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { getMonthRange } from '@/lib/utils/date';
+import { DEFAULT_ACCENT_COLOR } from '@/lib/constants';
 
 export function addTransaction({ amount, category, description, date }) {
   const id = uuidv4();
@@ -194,7 +195,7 @@ export function createPod({ name, target_amount, wishlist_item_id, icon, color }
   const id = uuidv4();
   getDb().prepare(
     'INSERT INTO savings_pods (id, name, target_amount, wishlist_item_id, icon, color, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime(\'now\'))'
-  ).run(id, name, target_amount, wishlist_item_id || null, icon || null, color || '#6366f1');
+  ).run(id, name, target_amount, wishlist_item_id || null, icon || null, color || DEFAULT_ACCENT_COLOR);
   return id;
 }
 

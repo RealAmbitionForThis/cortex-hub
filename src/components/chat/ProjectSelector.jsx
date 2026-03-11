@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { DEFAULT_ACCENT_COLOR } from '@/lib/constants';
 
 export function ProjectSelector({ conversationId, currentProjectId, onProjectChange }) {
   const [projects, setProjects] = useState([]);
@@ -17,7 +18,7 @@ export function ProjectSelector({ conversationId, currentProjectId, onProjectCha
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editProject, setEditProject] = useState(null);
-  const [newProject, setNewProject] = useState({ name: '', system_prompt: '', icon: '📂', color: '#6366f1' });
+  const [newProject, setNewProject] = useState({ name: '', system_prompt: '', icon: '📂', color: DEFAULT_ACCENT_COLOR });
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -68,7 +69,7 @@ export function ProjectSelector({ conversationId, currentProjectId, onProjectCha
       if (res.ok) {
         toast.success('Project created');
         setShowCreate(false);
-        setNewProject({ name: '', system_prompt: '', icon: '📂', color: '#6366f1' });
+        setNewProject({ name: '', system_prompt: '', icon: '📂', color: DEFAULT_ACCENT_COLOR });
         await fetchProjects();
       }
     } catch {
@@ -259,7 +260,7 @@ export function ProjectSelector({ conversationId, currentProjectId, onProjectCha
                   <Label className="text-xs">Color</Label>
                   <Input
                     type="color"
-                    value={editProject.color || '#6366f1'}
+                    value={editProject.color || DEFAULT_ACCENT_COLOR}
                     onChange={(e) => setEditProject(p => ({ ...p, color: e.target.value }))}
                     className="w-16 h-9"
                   />

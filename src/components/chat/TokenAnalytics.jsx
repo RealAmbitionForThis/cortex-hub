@@ -51,6 +51,20 @@ export function TokenAnalytics({ messages, chatSettings }) {
       }
     }
 
+    // Use the last message's prompt_tokens for context usage (not cumulative total)
+    let lastPromptTokens = 0;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role !== 'assistant') continue;
+      let td = null;
+      if (msg.tokenStats) td = msg.tokenStats;
+      else if (msg.tokens_used) {
+        try { td = typeof msg.tokens_used === 'string' ? JSON.parse(msg.tokens_used) : msg.tokens_used; } catch { /* skip */ }
+      }
+      if (td?.prompt_tokens) { lastPromptTokens = td.prompt_tokens; break; }
+    }
+
+    const contextWindow = chatSettings?.num_ctx || DEFAULT_CONTEXT_WINDOW;
     return {
       totalPrompt,
       totalCompletion,
@@ -58,8 +72,9 @@ export function TokenAnalytics({ messages, chatSettings }) {
       totalDuration,
       lastTps,
       messagesWithStats,
-      contextWindow: chatSettings?.num_ctx || DEFAULT_CONTEXT_WINDOW,
-      contextUsedPercent: totalPrompt > 0 ? Math.min(100, Math.round((totalPrompt / (chatSettings?.num_ctx || DEFAULT_CONTEXT_WINDOW)) * 100)) : 0,
+      contextWindow,
+      lastPromptTokens,
+      contextUsedPercent: lastPromptTokens > 0 ? Math.min(100, Math.round((lastPromptTokens / contextWindow) * 100)) : 0,
     };
   }, [messages, chatSettings]);
 
@@ -112,7 +127,7 @@ export function TokenAnalytics({ messages, chatSettings }) {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Context Window</span>
-            <span className="font-medium">{formatNum(stats.totalPrompt)} / {formatNum(stats.contextWindow)}</span>
+            <span className="font-medium">{formatNum(stats.lastPromptTokens)} / {formatNum(stats.contextWindow)}</span>
           </div>
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <div

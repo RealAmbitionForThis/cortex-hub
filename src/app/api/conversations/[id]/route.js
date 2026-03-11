@@ -29,6 +29,7 @@ export const PUT = withHandler(async (request, { params }) => {
 export const DELETE = withHandler(async (request, { params }) => {
   const db = getDb();
   const { id } = await params;
+  db.prepare('DELETE FROM messages WHERE conversation_id = ?').run(id);
   db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
   return success();
 });

@@ -74,6 +74,7 @@ function createIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_warranty_claims_item ON warranty_claims(inventory_item_id);
     CREATE INDEX IF NOT EXISTS idx_important_dates_date ON important_dates(date);
     CREATE INDEX IF NOT EXISTS idx_important_dates_type ON important_dates(type);
+    CREATE INDEX IF NOT EXISTS idx_conversations_project ON conversations(project_id);
   `);
 }
 

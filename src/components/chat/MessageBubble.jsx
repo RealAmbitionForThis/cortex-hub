@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-react';
 import { DebugPanel } from './DebugPanel';
 
-export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
+export function MessageBubble({ message, onEdit }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [copied, setCopied] = useState(false);

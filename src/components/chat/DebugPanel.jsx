@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
  * Toggled by a Terminal icon button in the controls row.
  */
 export function DebugTerminalPanel({ messages, streaming }) {
+  if (process.env.NODE_ENV === 'production') return null;
   const [activeSection, setActiveSection] = useState('server');
 
   // Extract debug info from the most recent assistant message that has it
@@ -176,6 +177,7 @@ export function DebugPanel({ debugInfo, toolRounds, tokenStats }) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('system');
 
+  if (process.env.NODE_ENV === 'production') return null;
   if (!debugInfo && !toolRounds?.length && !tokenStats) return null;
 
   return (

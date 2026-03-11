@@ -19,6 +19,7 @@ import {
   X, Save, ChevronRight, ScrollText, Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DEFAULT_ACCENT_COLOR } from '@/lib/constants';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function ProjectsPage() {
   const [projectDocs, setProjectDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newProject, setNewProject] = useState({ name: '', system_prompt: '', icon: '📂', color: '#6366f1' });
+  const [newProject, setNewProject] = useState({ name: '', system_prompt: '', icon: '📂', color: DEFAULT_ACCENT_COLOR });
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
@@ -76,7 +77,7 @@ export default function ProjectsPage() {
         const data = await res.json();
         toast.success('Project created');
         setShowCreate(false);
-        setNewProject({ name: '', system_prompt: '', icon: '📂', color: '#6366f1' });
+        setNewProject({ name: '', system_prompt: '', icon: '📂', color: DEFAULT_ACCENT_COLOR });
         await fetchProjects();
         // Auto-select new project
         const newP = { ...newProject, id: data.id };
@@ -293,7 +294,7 @@ export default function ProjectsPage() {
                             </Button>
                           </>
                         ) : (
-                          <Button size="sm" variant="ghost" onClick={() => { setEditing(true); setEditForm({ name: selectedProject.name, system_prompt: selectedProject.system_prompt || '', icon: selectedProject.icon || '📂', color: selectedProject.color || '#6366f1' }); }}>
+                          <Button size="sm" variant="ghost" onClick={() => { setEditing(true); setEditForm({ name: selectedProject.name, system_prompt: selectedProject.system_prompt || '', icon: selectedProject.icon || '📂', color: selectedProject.color || DEFAULT_ACCENT_COLOR }); }}>
                             <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                           </Button>
                         )}
@@ -333,7 +334,7 @@ export default function ProjectsPage() {
                           <Label className="text-xs">Color</Label>
                           <Input
                             type="color"
-                            value={editForm.color ?? '#6366f1'}
+                            value={editForm.color ?? DEFAULT_ACCENT_COLOR}
                             onChange={(e) => setEditForm(f => ({ ...f, color: e.target.value }))}
                             className="w-16 h-9"
                           />
