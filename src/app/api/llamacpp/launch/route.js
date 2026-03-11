@@ -260,6 +260,18 @@ export async function POST(request) {
                           db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(
                             'main_model', JSON.stringify(modelName)
                           );
+                          // Also add to llamacpp_models list so it shows in ModelConfig dropdown
+                          try {
+                            let modelsList = [];
+                            const existing = db.prepare("SELECT value FROM settings WHERE key = 'llamacpp_models'").get();
+                            if (existing) modelsList = JSON.parse(existing.value);
+                            if (!modelsList.includes(modelName)) {
+                              modelsList.push(modelName);
+                              db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(
+                                'llamacpp_models', JSON.stringify(modelsList)
+                              );
+                            }
+                          } catch { /* non-critical */ }
                           addLog(`[cortex] Auto-configured main_model = ${modelName}`);
                           sendEvent({ type: 'config_updated', llamacpp_url: url, main_model: modelName, cortex_backend: 'llamacpp' });
                           return;
