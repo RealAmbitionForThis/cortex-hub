@@ -1,9 +1,12 @@
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
 export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think }) {
+  // keep_alive is a top-level Ollama param, not inside options
+  const { keep_alive, ...ollamaOptions } = options;
   const body = { model, messages, stream };
   if (tools?.length) body.tools = tools;
-  if (Object.keys(options).length > 0) body.options = options;
+  if (Object.keys(ollamaOptions).length > 0) body.options = ollamaOptions;
+  if (keep_alive !== undefined) body.keep_alive = keep_alive;
   // Enable Ollama's native thinking support — returns thinking in message.thinking field
   if (think !== undefined) body.think = think;
 
