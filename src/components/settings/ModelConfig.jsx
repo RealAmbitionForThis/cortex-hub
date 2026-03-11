@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,27 @@ import { RefreshCw, RotateCcw, BrainCircuit } from 'lucide-react';
 import { SAMPLING_PARAMS, PARAM_GROUPS, getDefaults } from '@/lib/sampling-params';
 
 export function ModelConfig({ settings, onSave }) {
-  const { models, refresh, loading } = useOllama();
+  const { models: ollamaModels, refresh, loading } = useOllama();
+  const backend = settings.cortex_backend || 'ollama';
+  const isLlamaCpp = backend === 'llamacpp';
+
+  const llamaModelNames = useMemo(() => {
+    try {
+      const raw = settings.llamacpp_models;
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }, [settings.llamacpp_models]);
+
+  const models = useMemo(() => {
+    const ollamaList = ollamaModels.map(m => ({ ...m, source: 'ollama' }));
+    const serverList = llamaModelNames.map(name => ({ name, source: 'llama-server' }));
+    if (isLlamaCpp) {
+      const merged = [...serverList, ...ollamaList];
+      return merged.filter((m, i, arr) => arr.findIndex(x => x.name === m.name) === i);
+    }
+    return ollamaList;
+  }, [ollamaModels, llamaModelNames, isLlamaCpp]);
+
   const [mainModel, setMainModel] = useState(settings.main_model || '');
   const [visionModel, setVisionModel] = useState(settings.vision_model || '');
   const [embeddingModel, setEmbeddingModel] = useState(settings.embedding_model || '');
@@ -224,32 +244,53 @@ function SettingsParamControl({ param, value, onChange }) {
 }
 
 function ModelSelect({ label, value, onChange, models }) {
-  const [manualInput, setManualInput] = useState('');
+  const [showManual, setShowManual] = useState(false);
   const hasModels = models.length > 0;
 
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      {hasModels ? (
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
-          <SelectContent>
-            {models.map((m) => (
-              <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : null}
-      <div className="flex gap-2">
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Type model name..."
-          className="text-sm"
-        />
-      </div>
-      {!hasModels && (
-        <p className="text-xs text-muted-foreground">No models detected from backend. Type a model name manually.</p>
+      {hasModels && !showManual ? (
+        <>
+          <Select value={value} onValueChange={onChange}>
+            <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+            <SelectContent>
+              {models.map((m) => (
+                <SelectItem key={m.name} value={m.name}>
+                  {m.name}{m.source ? ` (${m.source})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+            onClick={() => setShowManual(true)}
+          >
+            Or type model name manually
+          </button>
+        </>
+      ) : (
+        <>
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Type model name..."
+            className="text-sm"
+          />
+          {hasModels && (
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline hover:text-foreground"
+              onClick={() => setShowManual(false)}
+            >
+              Back to model list
+            </button>
+          )}
+          {!hasModels && (
+            <p className="text-xs text-muted-foreground">No models detected from backend. Type a model name manually.</p>
+          )}
+        </>
       )}
     </div>
   );

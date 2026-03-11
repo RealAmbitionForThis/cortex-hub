@@ -96,7 +96,12 @@ export function TopBar({ title, onMenuClick }) {
 
   const modelDisplayName = defaultModel ? defaultModel.split(':')[0] : 'No model';
   const isLlamaCpp = backend === 'llamacpp';
-  const displayModels = isLlamaCpp ? [...llamaModels.map(m => ({ name: m })), ...models] : models;
+  const displayModels = isLlamaCpp
+    ? [
+        ...llamaModels.map(m => ({ name: m, source: 'llama-server' })),
+        ...models.map(m => ({ ...m, source: 'ollama' })),
+      ]
+    : models.map(m => ({ ...m, source: 'ollama' }));
   // Deduplicate by name
   const uniqueModels = displayModels.filter((m, i, arr) => arr.findIndex(x => x.name === m.name) === i);
 
@@ -170,7 +175,9 @@ export function TopBar({ title, onMenuClick }) {
 
           {uniqueModels.length > 0 && (
             <>
-              <p className="text-xs text-muted-foreground">Or select from available models:</p>
+              <p className="text-xs text-muted-foreground">
+                Available models{isLlamaCpp ? ' (llama-server)' : ' (Ollama)'}:
+              </p>
               <div className="space-y-1 max-h-[40vh] overflow-auto">
                 {uniqueModels.map((m) => (
                   <button
@@ -182,11 +189,18 @@ export function TopBar({ title, onMenuClick }) {
                     )}
                   >
                     <span className="font-medium truncate">{m.name}</span>
-                    {m.size > 0 && (
-                      <Badge variant="secondary" className="text-xs ml-2 shrink-0">
-                        {typeof m.size === 'number' ? `${(m.size / 1e9).toFixed(1)}GB` : m.size}
-                      </Badge>
-                    )}
+                    <span className="flex items-center gap-1 shrink-0">
+                      {isLlamaCpp && m.source && (
+                        <Badge variant="outline" className="text-[10px] ml-1">
+                          {m.source}
+                        </Badge>
+                      )}
+                      {m.size > 0 && (
+                        <Badge variant="secondary" className="text-xs ml-1">
+                          {typeof m.size === 'number' ? `${(m.size / 1e9).toFixed(1)}GB` : m.size}
+                        </Badge>
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>

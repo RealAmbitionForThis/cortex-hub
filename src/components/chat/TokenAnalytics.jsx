@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { BarChart3, Zap, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { DEFAULT_CONTEXT_WINDOW } from '@/lib/constants';
 
 function formatNum(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -57,8 +58,8 @@ export function TokenAnalytics({ messages, chatSettings }) {
       totalDuration,
       lastTps,
       messagesWithStats,
-      contextWindow: chatSettings?.contextWindow || 4096,
-      contextUsedPercent: totalPrompt > 0 ? Math.min(100, Math.round((totalPrompt / (chatSettings?.contextWindow || 4096)) * 100)) : 0,
+      contextWindow: chatSettings?.num_ctx || DEFAULT_CONTEXT_WINDOW,
+      contextUsedPercent: totalPrompt > 0 ? Math.min(100, Math.round((totalPrompt / (chatSettings?.num_ctx || DEFAULT_CONTEXT_WINDOW)) * 100)) : 0,
     };
   }, [messages, chatSettings]);
 
