@@ -91,6 +91,9 @@ export function useChat() {
         ? `${message}\n\n---\n${attachmentTexts.join('\n\n')}`
         : message;
 
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -105,6 +108,7 @@ export function useChat() {
           systemPromptOverride,
           extraAnalyze: extraAnalyze || false,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) throw new Error('Chat request failed');
@@ -138,6 +142,13 @@ export function useChat() {
 
           try {
             const event = JSON.parse(raw);
+            if (event.error) {
+              toast.error(event.error);
+              setMessages((prev) =>
+                prev.map((m) => m.id === assistantId ? { ...m, content: event.error, error: true, streaming: false } : m)
+              );
+              break;
+            }
             if (event.type === 'analysis_result') {
               // Update the analyzer panel with results
               setAnalysisState({ status: 'complete', data: event.data });
@@ -189,16 +200,26 @@ export function useChat() {
       setMessages((prev) =>
         prev.map((m) => m.streaming ? { ...m, streaming: false } : m)
       );
-    } catch {
-      const backendHint = 'Failed to get response. Check that your LLM backend (Ollama or llama-server) is running and reachable in Settings > Backend.';
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: backendHint, error: true }]);
-      toast.error('Failed to get response from LLM backend');
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        // User cancelled — mark current streaming message as done
+        setMessages((prev) =>
+          prev.map((m) => m.streaming ? { ...m, streaming: false, content: m.content || '(stopped)' } : m)
+        );
+        toast('Response stopped');
+      } else {
+        const detail = err.message || 'Unknown error';
+        const backendHint = `Failed to get response: ${detail}. Check that your LLM backend (Ollama or llama-server) is running and reachable in Settings > Backend.`;
+        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: backendHint, error: true }]);
+        toast.error(`LLM backend error: ${detail}`);
+      }
       // Reset analysis state on error
       if (extraAnalyze) {
         setAnalysisState({ status: 'idle', data: null });
       }
     } finally {
       clearStuckTimer();
+      abortRef.current = null;
       setStreaming(false);
     }
   }, [conversationId]);
@@ -257,6 +278,10 @@ export function useChat() {
     }
   }, [messages, loadConversation, sendMessage]);
 
+  const stopStreaming = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
@@ -266,7 +291,7 @@ export function useChat() {
 
   return {
     messages, streaming, conversationId, conversationMeta, analysisState,
-    sendMessage, editMessage, deleteMessage, regenerate,
+    sendMessage, stopStreaming, editMessage, deleteMessage, regenerate,
     loadConversation, clearChat, setConversationId,
   };
 }

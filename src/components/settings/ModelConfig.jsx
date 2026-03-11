@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { useOllama } from '@/hooks/useOllama';
+import { useBackendStatus } from '@/hooks/useBackendStatus';
 import { Switch } from '@/components/ui/switch';
 import { RefreshCw, RotateCcw, BrainCircuit } from 'lucide-react';
 import { SAMPLING_PARAMS, PARAM_GROUPS, getDefaults } from '@/lib/sampling-params';
 
 export function ModelConfig({ settings, onSave }) {
-  const { models: ollamaModels, refresh, loading } = useOllama();
+  const { models: ollamaModels, refresh, loading } = useBackendStatus();
   const backend = settings.cortex_backend || 'ollama';
   const isLlamaCpp = backend === 'llamacpp';
 
@@ -24,13 +24,14 @@ export function ModelConfig({ settings, onSave }) {
   }, [settings.llamacpp_models]);
 
   const models = useMemo(() => {
-    const ollamaList = ollamaModels.map(m => ({ ...m, source: 'ollama' }));
-    const serverList = llamaModelNames.map(name => ({ name, source: 'llama-server' }));
+    const sourceLabel = isLlamaCpp ? 'llama-server' : 'ollama';
+    const backendList = ollamaModels.map(m => ({ ...m, source: sourceLabel }));
     if (isLlamaCpp) {
-      const merged = [...serverList, ...ollamaList];
+      const serverList = llamaModelNames.map(name => ({ name, source: 'llama-server' }));
+      const merged = [...serverList, ...backendList];
       return merged.filter((m, i, arr) => arr.findIndex(x => x.name === m.name) === i);
     }
-    return ollamaList;
+    return backendList;
   }, [ollamaModels, llamaModelNames, isLlamaCpp]);
 
   const [mainModel, setMainModel] = useState(settings.main_model || '');

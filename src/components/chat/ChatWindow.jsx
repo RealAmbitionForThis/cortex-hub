@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Send, Settings2, Paperclip, X, FileText, ChevronDown, RotateCcw, BrainCircuit, Terminal } from 'lucide-react';
+import { Send, Square, Settings2, Paperclip, X, FileText, ChevronDown, RotateCcw, BrainCircuit, Terminal } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { ReasoningLevelPicker } from './ReasoningLevelPicker';
 import { ToolToggle } from './ToolToggle';
@@ -27,7 +27,7 @@ import { MessageSquare } from 'lucide-react';
 import { SAMPLING_PARAMS, PARAM_GROUPS, getDefaults, buildOllamaOptions } from '@/lib/sampling-params';
 import { cn } from '@/lib/utils';
 
-export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRegenerate, modelName, conversationId, conversationMeta, analysisState }) {
+export function ChatWindow({ messages, streaming, onSend, onStop, onEdit, onDelete, onRegenerate, modelName, conversationId, conversationMeta, analysisState }) {
   const [input, setInput] = useState('');
   const [reasoningLevel, setReasoningLevel] = useState('medium');
   const [enabledTools, setEnabledTools] = useState({ web_search: true, tools: true });
@@ -217,14 +217,26 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
               className="min-h-[40px] max-h-[150px] resize-none"
               rows={1}
             />
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={!input.trim() || streaming}
-              className="shrink-0 h-10 w-10"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {streaming ? (
+              <Button
+                size="icon"
+                variant="destructive"
+                onClick={onStop}
+                className="shrink-0 h-10 w-10"
+                title="Stop generating"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="shrink-0 h-10 w-10"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

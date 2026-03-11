@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export function useOllama() {
+export function useBackendStatus() {
   const [connected, setConnected] = useState(false);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);

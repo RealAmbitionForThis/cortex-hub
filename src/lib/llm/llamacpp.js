@@ -45,6 +45,10 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   if (options.dynatemp_range !== undefined) body.dynatemp_range = options.dynatemp_range;
   if (options.cache_prompt !== undefined) body.cache_prompt = options.cache_prompt;
 
+  if (stream) {
+    body.stream_options = { include_usage: true };
+  }
+
   if (tools?.length) {
     body.tools = tools;
     body.tool_choice = 'auto';
