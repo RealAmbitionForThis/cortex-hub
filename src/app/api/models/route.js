@@ -25,6 +25,11 @@ export const GET = withHandler(async (request) => {
       nameLower.includes('qwen3') ||
       nameLower.includes('deepseek-r1') ||
       nameLower.includes('deepseek-reasoner') ||
+      nameLower.includes('gpt-oss') ||
+      nameLower.includes('gpt_oss') ||
+      nameLower.includes('kimi') ||
+      nameLower.includes('command-r') ||
+      nameLower.includes('smollm3') ||
       nameLower.includes('think');
 
     const supportsThinking = hasThinkingTemplate || hasThinkingName;
@@ -38,6 +43,11 @@ export const GET = withHandler(async (request) => {
   }
 
   // Otherwise list all models
-  const models = await listModels();
-  return success({ models });
+  try {
+    const models = await listModels();
+    return success({ models });
+  } catch {
+    // Server not ready yet (503) or unreachable — return empty instead of 500
+    return success({ models: [] });
+  }
 });

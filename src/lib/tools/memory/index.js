@@ -71,7 +71,15 @@ async function handleAddStatic({ content, category, module }) {
 
 function handleForget({ memory_id }) {
   const db = getDb();
-  db.prepare('DELETE FROM memories WHERE id = ? AND protected = 0').run(memory_id);
+  // Check if memory exists and if it's protected
+  const existing = db.prepare('SELECT id, protected FROM memories WHERE id = ?').get(memory_id);
+  if (!existing) {
+    return { success: false, error: 'Memory not found' };
+  }
+  if (existing.protected) {
+    return { success: false, error: 'Cannot delete a protected (static) memory. Use the Memories page to remove it manually.' };
+  }
+  db.prepare('DELETE FROM memories WHERE id = ?').run(memory_id);
   return { success: true };
 }
 

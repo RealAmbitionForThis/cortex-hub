@@ -101,9 +101,13 @@ function buildArgs(modelPath, args) {
   // Model & Template
   if (args.chatTemplate && args.chatTemplate !== 'auto') flags.push('--chat-template', args.chatTemplate);
   if (args.jinja) flags.push('--jinja');
-  if (args.thinkMode && args.thinkMode !== 'auto') flags.push('--think', args.thinkMode);
+  // Use --reasoning-format (not --think) for wider llama-server version compatibility.
+  // --think was added in very recent builds; --reasoning-format has been supported since ~b4800+.
+  if (args.thinkMode && args.thinkMode !== 'auto') flags.push('--reasoning-format', args.thinkMode);
   if (args.reasoningBudget !== undefined && args.reasoningBudget !== -1) flags.push('--reasoning-budget', String(args.reasoningBudget));
-  if (args.chatTemplateKwargs && args.chatTemplateKwargs.trim()) flags.push('--chat-template-kwargs', args.chatTemplateKwargs.trim());
+  // NOTE: --chat-template-kwargs is NOT passed as a CLI flag.
+  // On Windows, cmd.exe mangles the JSON double quotes. Instead we pass it
+  // via the LLAMA_CHAT_TEMPLATE_KWARGS env var in the spawn call.
   if (args.lora) flags.push('--lora', args.lora);
 
   // Embedding
@@ -183,6 +187,21 @@ export async function POST(request) {
     addLog(`[cortex] Port: ${port}, Host: ${host}`);
 
     const isWindows = process.platform === 'win32';
+
+    // Build env overrides — JSON-valued flags go here to avoid shell quoting issues
+    const spawnEnv = { ...process.env };
+    if (args.chatTemplateKwargs && args.chatTemplateKwargs.trim()) {
+      // Validate it's actually valid JSON before passing
+      const kwargsRaw = args.chatTemplateKwargs.trim();
+      try {
+        JSON.parse(kwargsRaw);
+        spawnEnv.LLAMA_CHAT_TEMPLATE_KWARGS = kwargsRaw;
+        addLog(`[cortex] chat-template-kwargs (env): ${kwargsRaw}`);
+      } catch {
+        addLog(`[cortex] WARNING: chat-template-kwargs is not valid JSON, skipping: ${kwargsRaw}`);
+      }
+    }
+
     // On Windows with shell: true, paths with spaces need quoting.
     // Wrap the binary in quotes so cmd.exe handles it correctly.
     const spawnBinary = isWindows ? `"${binary}"` : binary;
@@ -191,6 +210,7 @@ export async function POST(request) {
       detached: false,
       shell: isWindows,
       windowsHide: true,
+      env: spawnEnv,
     });
 
     serverProcess = child;

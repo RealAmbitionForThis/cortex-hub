@@ -10,8 +10,11 @@ export const POST = withHandler(async (request) => {
     return badRequest('Invalid message');
   }
 
-  db.prepare('DELETE FROM messages WHERE conversation_id = ? AND id >= ?')
-    .run(msg.conversation_id, msg.id);
+  // Delete this specific message + all messages strictly after it.
+  // Using (id = target OR created_at > target) avoids deleting other messages
+  // that happen to share the same created_at second (e.g. during rapid tool call rounds).
+  db.prepare('DELETE FROM messages WHERE conversation_id = ? AND (id = ? OR created_at > ?)')
+    .run(msg.conversation_id, msg.id, msg.created_at);
 
   return success({
     conversationId: msg.conversation_id,

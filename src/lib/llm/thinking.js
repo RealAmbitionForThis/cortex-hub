@@ -135,7 +135,7 @@ export function buildLlamacppThinkParams(family, level) {
 
     case 'gptoss':
       return {
-        reasoning_effort: level || 'medium',
+        chat_template_kwargs: { reasoning_effort: level || 'medium' },
       };
 
     case 'kimi':

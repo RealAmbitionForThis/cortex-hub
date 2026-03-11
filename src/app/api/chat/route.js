@@ -113,11 +113,14 @@ export async function POST(request) {
           new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout')), analysisTimeoutMs)),
         ]);
 
-        // Parse the non-streaming response
+        // Parse the non-streaming response — format differs between Ollama and llama-server
         let rawAnalysisText = '';
         if (analysisResponse && typeof analysisResponse.json === 'function') {
           const jsonData = await analysisResponse.json();
-          rawAnalysisText = jsonData?.message?.content ?? '';
+          // Ollama returns { message: { content } }, llama-server returns { choices: [{ message: { content } }] }
+          rawAnalysisText = jsonData?.message?.content
+            ?? jsonData?.choices?.[0]?.message?.content
+            ?? '';
         }
 
         const analysisTimeMsElapsed = Date.now() - analysisStart;
@@ -150,8 +153,9 @@ export async function POST(request) {
       memories = enrichedContext.memories;
       tools = enrichedContext.filteredTools;
     } else {
-      // Standard: retrieve all memories and all tools
-      memories = await retrieveRelevantMemories({ query: message });
+      // Standard: retrieve all memories (including active cluster memories) and all tools
+      const activeClusterIds = activeClusters.map(c => c.id);
+      memories = await retrieveRelevantMemories({ query: message, clusterIds: activeClusterIds });
       tools = getToolDefinitions();
     }
 
@@ -269,7 +273,7 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
     }
 
     if (toolCalls.length > 0) {
-      await handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools, tokenStats });
+      await handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools, tokenStats, thinkParam, extraBodyParams });
       return;
     }
 
@@ -286,7 +290,7 @@ async function streamChat({ db, convId, mainModel, messages, tools, send, close,
   }
 }
 
-async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools, tokenStats: initialStats }) {
+async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, fullContent, send, close, streamError, reasoningLevel, ollamaOptions, tools, tokenStats: initialStats, thinkParam, extraBodyParams = {} }) {
   const MAX_TOOL_ROUNDS = 10;
   try {
     let currentMessages = [...messages];
@@ -331,7 +335,7 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
       // Send debug snapshot of messages going to the model for this tool round
       send({ type: 'debug_tool_round', round: round + 1, messages: currentMessages.map(m => ({ role: m.role, content: m.content?.slice(0, 500), tool_calls: m.tool_calls ? m.tool_calls.map(tc => tc.function?.name) : undefined })) });
 
-      const res = await chatCompletion({ model: mainModel, messages: currentMessages, tools, stream: true, options: ollamaOptions });
+      const res = await chatCompletion({ model: mainModel, messages: currentMessages, tools, stream: true, options: ollamaOptions, think: thinkParam, extraBody: extraBodyParams });
       let nextContent = '';
       let nextToolCalls = [];
 
@@ -403,7 +407,14 @@ function saveAssistantMessage(db, convId, content, toolCalls, reasoningLevel, to
 function getMessageHistory(db, convId) {
   const rows = db.prepare('SELECT role, content, tool_calls FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 50').all(convId);
   return rows.map(row => {
-    const msg = { role: row.role, content: row.content || '' };
+    let content = row.content || '';
+    // Strip <think>...</think> blocks from assistant history.
+    // Qwen docs: "historical model output should only include the final output part"
+    // Sending thinking tokens back wastes context and can confuse the model.
+    if (row.role === 'assistant') {
+      content = content.replace(/<think>[\s\S]*?<\/think>\n?/g, '').trim();
+    }
+    const msg = { role: row.role, content };
     // Restore tool_calls on assistant messages so the model sees its prior tool usage
     if (row.tool_calls) {
       try {

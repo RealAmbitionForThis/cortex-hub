@@ -29,7 +29,7 @@ export function getTransactions({ period, category, limit } = {}) {
 }
 
 export function getBalance(period) {
-  const { start, end } = getMonthRange();
+  const { start, end } = getMonthRange(period instanceof Date ? period : (period ? new Date(period) : undefined));
   const db = getDb();
   const income = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE amount > 0 AND date >= ? AND date <= ?').get(start, end);
   const expenses = db.prepare('SELECT COALESCE(SUM(ABS(amount)), 0) as total FROM transactions WHERE amount < 0 AND date >= ? AND date <= ?').get(start, end);
@@ -39,7 +39,7 @@ export function getBalance(period) {
 }
 
 export function getSpendingByCategory(period) {
-  const { start, end } = getMonthRange();
+  const { start, end } = getMonthRange(period instanceof Date ? period : (period ? new Date(period) : undefined));
   return getDb().prepare(
     'SELECT category, SUM(ABS(amount)) as total FROM transactions WHERE amount < 0 AND date >= ? AND date <= ? GROUP BY category ORDER BY total DESC'
   ).all(start, end);
@@ -247,8 +247,26 @@ export function getWishlistBudgetInsight() {
 
 function calculateNextDue(frequency, dueDay) {
   const now = new Date();
-  const next = new Date(now);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+  if (dueDay && (frequency === 'monthly' || frequency === 'quarterly' || frequency === 'yearly')) {
+    // For frequencies with a specific due day, find the next occurrence of that day
+    const next = new Date(today);
+    next.setDate(dueDay);
+    // If the due day this month/period is already past, advance to next period
+    if (next <= today) {
+      switch (frequency) {
+        case 'monthly': next.setMonth(next.getMonth() + 1); break;
+        case 'quarterly': next.setMonth(next.getMonth() + 3); break;
+        case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
+      }
+      next.setDate(dueDay);
+    }
+    return next.toISOString().split('T')[0];
+  }
+
+  // For weekly/biweekly or no specific due day, just offset from today
+  const next = new Date(today);
   switch (frequency) {
     case 'monthly': next.setMonth(next.getMonth() + 1); break;
     case 'weekly': next.setDate(next.getDate() + 7); break;
@@ -257,7 +275,5 @@ function calculateNextDue(frequency, dueDay) {
     case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
     default: break;
   }
-
-  if (dueDay) next.setDate(dueDay);
   return next.toISOString().split('T')[0];
 }

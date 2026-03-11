@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -239,6 +240,7 @@ export function LlamaServerLauncher({ settings, onSave }) {
   const [log, setLog] = useState([]);
   const logRef = useRef(null);
   const [binaryPath, setBinaryPath] = useState(settings.llamacpp_binary_path || '');
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // config name pending deletion
 
   const savedDirs = (() => {
     const raw = settings.llamacpp_model_dirs;
@@ -466,7 +468,7 @@ export function LlamaServerLauncher({ settings, onSave }) {
               >
                 {c.name}
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteConfig(c.name); }}
+                  onClick={(e) => { e.stopPropagation(); setDeleteConfirm(c.name); }}
                   className="hover:text-destructive ml-1"
                 >
                   <X className="h-3 w-3" />
@@ -476,6 +478,22 @@ export function LlamaServerLauncher({ settings, onSave }) {
           </div>
         </div>
       )}
+
+      {/* Delete config confirmation */}
+      <Dialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Configuration</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-semibold text-foreground">"{deleteConfirm}"</span>? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+            <Button variant="destructive" size="sm" onClick={() => { handleDeleteConfig(deleteConfirm); setDeleteConfirm(null); }}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Save current config */}
       <div className="flex gap-2">
@@ -704,7 +722,7 @@ export function LlamaServerLauncher({ settings, onSave }) {
             <Switch checked={args.jinja} onCheckedChange={(v) => updateArg('jinja', v)} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Reasoning Format (--think)</Label>
+            <Label className="text-xs">Reasoning Format (--reasoning-format)</Label>
             <Select value={args.thinkMode} onValueChange={(v) => updateArg('thinkMode', v)}>
               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -728,14 +746,14 @@ export function LlamaServerLauncher({ settings, onSave }) {
             <p className="text-[10px] text-muted-foreground">Set to "Disabled" to hard-disable thinking at server level. Works with Qwen3, QwQ, DeepSeek R1 distills, etc.</p>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Chat Template Kwargs (--chat-template-kwargs)</Label>
+            <Label className="text-xs">Chat Template Kwargs (env: LLAMA_CHAT_TEMPLATE_KWARGS)</Label>
             <Input
               value={args.chatTemplateKwargs}
               onChange={(e) => updateArg('chatTemplateKwargs', e.target.value)}
               placeholder='{"enable_thinking": false}'
               className="font-mono text-xs"
             />
-            <p className="text-[10px] text-muted-foreground">JSON passed to Jinja template. Qwen: {'{"enable_thinking": false}'}. GPT-OSS: {'{"reasoning_effort": "low"}'}</p>
+            <p className="text-[10px] text-muted-foreground">JSON passed to Jinja template via env var (avoids Windows shell quoting issues). Qwen: {'{"enable_thinking": false}'}. GPT-OSS: {'{"reasoning_effort": "low"}'}</p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">LoRA Path (--lora)</Label>

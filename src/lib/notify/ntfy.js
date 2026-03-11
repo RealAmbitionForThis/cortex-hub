@@ -1,7 +1,30 @@
-const NTFY_URL = process.env.CORTEX_NTFY_URL || 'https://ntfy.sh';
-const NTFY_TOPIC = process.env.CORTEX_NTFY_TOPIC || 'cortex-hub';
+import { getDb } from '@/lib/db';
+
+function getNtfyConfig() {
+  // Read from DB settings first, fall back to env vars
+  try {
+    const db = getDb();
+    const urlRow = db.prepare("SELECT value FROM settings WHERE key = 'ntfy_url'").get();
+    const topicRow = db.prepare("SELECT value FROM settings WHERE key = 'ntfy_topic'").get();
+    const url = urlRow ? JSON.parse(urlRow.value) : null;
+    const topic = topicRow ? JSON.parse(topicRow.value) : null;
+    return {
+      url: url || process.env.CORTEX_NTFY_URL || 'https://ntfy.sh',
+      topic: topic || process.env.CORTEX_NTFY_TOPIC || '',
+    };
+  } catch {
+    return {
+      url: process.env.CORTEX_NTFY_URL || 'https://ntfy.sh',
+      topic: process.env.CORTEX_NTFY_TOPIC || '',
+    };
+  }
+}
 
 export async function sendNotification({ title, message, priority = 3, tags = [], click }) {
+  const { url: ntfyUrl, topic: ntfyTopic } = getNtfyConfig();
+  if (!ntfyTopic) {
+    return { success: false, error: 'ntfy topic not configured. Set it in Settings > Notifications.' };
+  }
   try {
     const headers = {
       'Title': title || 'Cortex Hub',
@@ -10,7 +33,7 @@ export async function sendNotification({ title, message, priority = 3, tags = []
     if (tags.length > 0) headers['Tags'] = tags.join(',');
     if (click) headers['Click'] = click;
 
-    const res = await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
+    const res = await fetch(`${ntfyUrl}/${ntfyTopic}`, {
       method: 'POST',
       headers,
       body: message || title,

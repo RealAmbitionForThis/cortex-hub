@@ -4,31 +4,58 @@ export class SSETransport {
     this.eventSource = null;
     this.messageHandlers = [];
     this.connected = false;
+    this.abortController = null;
   }
 
   async connect() {
-    return new Promise((resolve, reject) => {
-      this.eventSource = new EventSource(this.url);
+    // Use fetch-based SSE instead of EventSource (which is browser-only).
+    // This works in both Node.js (Next.js API routes) and browser contexts.
+    this.abortController = new AbortController();
+    try {
+      const res = await fetch(this.url, {
+        headers: { 'Accept': 'text/event-stream' },
+        signal: this.abortController.signal,
+      });
+      if (!res.ok) throw new Error(`MCP SSE connect failed: ${res.status}`);
+      this.connected = true;
 
-      this.eventSource.onopen = () => {
-        this.connected = true;
-        resolve();
-      };
+      // Process SSE stream in the background
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const self = this;
 
-      this.eventSource.onmessage = (event) => {
+      (async () => {
         try {
-          const data = JSON.parse(event.data);
-          for (const handler of this.messageHandlers) handler(data);
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop() || '';
+            for (const chunk of lines) {
+              const dataLine = chunk.split('\n').find(l => l.startsWith('data: '));
+              if (!dataLine) continue;
+              try {
+                const data = JSON.parse(dataLine.slice(6));
+                for (const handler of self.messageHandlers) handler(data);
+              } catch (e) {
+                console.error('[mcp/transport] Failed to parse SSE message:', e.message);
+              }
+            }
+          }
         } catch (e) {
-          console.error('[mcp/transport] Failed to parse SSE message:', e.message);
+          if (e.name !== 'AbortError') {
+            console.error('[mcp/transport] SSE stream error:', e.message);
+          }
+        } finally {
+          self.connected = false;
         }
-      };
-
-      this.eventSource.onerror = (err) => {
-        this.connected = false;
-        if (!this.connected) reject(err);
-      };
-    });
+      })();
+    } catch (err) {
+      this.connected = false;
+      throw err;
+    }
   }
 
   onMessage(handler) {
@@ -48,6 +75,10 @@ export class SSETransport {
   }
 
   disconnect() {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;

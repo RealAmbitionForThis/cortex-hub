@@ -52,7 +52,8 @@ export async function analyzeMessages(messages, model) {
     });
 
     const data = await res.json();
-    const content = data.message?.content || '';
+    // Ollama: { message: { content } }, llama-server: { choices: [{ message: { content } }] }
+    const content = data.message?.content || data.choices?.[0]?.message?.content || '';
     const extracted = parseJsonSafe(content);
 
     if (extracted) {

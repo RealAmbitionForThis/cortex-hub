@@ -40,7 +40,7 @@ const DATA_FETCHERS = {
   active_budgets(db) {
     try {
       const budgets = db.prepare(
-        'SELECT category, amount, period FROM budgets WHERE active = 1'
+        'SELECT category, monthly_limit FROM budgets'
       ).all();
 
       // Enrich with spent amounts for current month
@@ -77,7 +77,7 @@ const DATA_FETCHERS = {
     try {
       const twoWeeksFromNow = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
       return db.prepare(
-        'SELECT name, amount, due_date, frequency, category FROM bills WHERE due_date <= ? AND paid = 0 ORDER BY due_date ASC LIMIT 10'
+        'SELECT name, amount, next_due, frequency, category FROM bills WHERE next_due <= ? AND paid_this_cycle = 0 ORDER BY next_due ASC LIMIT 10'
       ).all(twoWeeksFromNow);
     } catch {
       return [];
@@ -87,7 +87,7 @@ const DATA_FETCHERS = {
   health_goals(db) {
     try {
       return db.prepare(
-        'SELECT type, target, current, unit, deadline FROM health_goals WHERE active = 1'
+        'SELECT type, target, unit FROM health_goals'
       ).all();
     } catch {
       return [];
@@ -117,7 +117,7 @@ const DATA_FETCHERS = {
   vehicle_mileage(db) {
     try {
       return db.prepare(
-        'SELECT name, make, model, year, mileage FROM vehicles'
+        'SELECT nickname, make, model, year, current_mileage FROM vehicles'
       ).all();
     } catch {
       return [];
@@ -138,7 +138,7 @@ const DATA_FETCHERS = {
     try {
       const weekFromNow = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
       return db.prepare(
-        'SELECT c.name, c.relationship, i.notes, i.follow_up_date FROM interactions i JOIN contacts c ON i.contact_id = c.id WHERE i.follow_up_date IS NOT NULL AND i.follow_up_date <= ? ORDER BY i.follow_up_date ASC LIMIT 10'
+        'SELECT c.name, c.company, i.notes, i.date FROM contact_interactions i JOIN contacts c ON i.contact_id = c.id WHERE i.type = \'followup\' AND i.date <= ? ORDER BY i.date ASC LIMIT 10'
       ).all(weekFromNow);
     } catch {
       return [];
