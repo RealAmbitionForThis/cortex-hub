@@ -47,8 +47,13 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   }
 
   // llama-server supports thinking natively via reasoning_content in the response.
-  // The model produces <think> blocks when launched with a thinking-capable model.
-  // No special request param needed — thinking is model-dependent, not API-controlled.
+  // Map the think boolean to reasoning_budget: true → -1 (unrestricted), false → 0 (disabled).
+  // The server must be launched with --think deepseek (or similar) for this to have effect.
+  if (think === true) {
+    body.reasoning_budget = -1;
+  } else if (think === false) {
+    body.reasoning_budget = 0;
+  }
 
   const res = await fetch(`${LLAMACPP_URL}/v1/chat/completions`, {
     method: 'POST',
