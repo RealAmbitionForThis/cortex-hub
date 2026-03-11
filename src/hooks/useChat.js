@@ -9,11 +9,17 @@ export function useChat() {
   const [messages, setMessages] = useState([]);
   const [streaming, setStreaming] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const conversationIdRef = useRef(null);
   const [conversationMeta, setConversationMeta] = useState(null);
   const [analysisState, setAnalysisState] = useState({ status: 'idle', data: null });
   const abortRef = useRef(null);
   const stuckTimeoutRef = useRef(null);
   const stuckWarningShownRef = useRef(false);
+
+  // Keep conversationId ref in sync so callbacks always read the latest value
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
 
   // Clear stuck timeout on unmount
   useEffect(() => {
@@ -98,7 +104,7 @@ export function useChat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          conversationId,
+          conversationId: conversationIdRef.current,
           message: fullMessage,
           model,
           reasoningLevel,
@@ -222,7 +228,7 @@ export function useChat() {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [conversationId]);
+  }, []); // conversationId accessed via ref to avoid stale closures
 
   const editMessage = useCallback(async (messageId, newContent) => {
     try {
@@ -231,14 +237,14 @@ export function useChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, newContent }),
       });
-      if (res.ok && conversationId) {
-        await loadConversation(conversationId);
+      if (res.ok && conversationIdRef.current) {
+        await loadConversation(conversationIdRef.current);
         toast.success('Message updated');
       }
     } catch {
       toast.error('Failed to edit message');
     }
-  }, [conversationId, loadConversation]);
+  }, [loadConversation]);
 
   const deleteMessage = useCallback(async (messageId) => {
     try {
@@ -247,14 +253,14 @@ export function useChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId }),
       });
-      if (res.ok && conversationId) {
-        await loadConversation(conversationId);
+      if (res.ok && conversationIdRef.current) {
+        await loadConversation(conversationIdRef.current);
         toast.success('Message deleted');
       }
     } catch {
       toast.error('Failed to delete message');
     }
-  }, [conversationId, loadConversation]);
+  }, [loadConversation]);
 
   const regenerate = useCallback(async (messageId, reasoningLevel) => {
     try {
@@ -266,17 +272,24 @@ export function useChat() {
       if (res.ok) {
         const data = await res.json();
         if (data.conversationId) {
-          await loadConversation(data.conversationId);
-          const lastUser = messages.filter((m) => m.role === 'user').pop();
-          if (lastUser) {
-            await sendMessage({ message: lastUser.content, reasoningLevel: data.reasoningLevel });
+          // Reload conversation to get fresh messages, then find last user message
+          const convRes = await fetch(`/api/conversations/${data.conversationId}`);
+          if (convRes.ok) {
+            const convData = await convRes.json();
+            const freshMessages = convData.messages || [];
+            setMessages(freshMessages);
+            setConversationId(data.conversationId);
+            const lastUser = freshMessages.filter((m) => m.role === 'user').pop();
+            if (lastUser) {
+              await sendMessage({ message: lastUser.content, reasoningLevel: data.reasoningLevel });
+            }
           }
         }
       }
     } catch {
       toast.error('Failed to regenerate');
     }
-  }, [messages, loadConversation, sendMessage]);
+  }, [sendMessage]);
 
   const stopStreaming = useCallback(() => {
     abortRef.current?.abort();

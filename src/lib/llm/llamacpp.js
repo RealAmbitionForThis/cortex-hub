@@ -4,7 +4,7 @@ function LLAMACPP_URL() {
   return resolveLlamacppUrl();
 }
 
-export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think }) {
+export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think, extraBody = {} }) {
   const body = {
     model: model || 'default',
     messages,
@@ -54,15 +54,19 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
     body.tool_choice = 'auto';
   }
 
-  // llama-server supports thinking natively via reasoning_content in the response.
-  // Map think param to reasoning_budget. Accepts booleans or gpt-oss style strings.
-  // The server must be launched with --think deepseek (or similar) for this to have effect.
-  if (think === true || think === 'high') {
-    body.reasoning_budget = -1;
-  } else if (think === false || think === 'low') {
-    body.reasoning_budget = 0;
-  } else if (think === 'medium') {
-    body.reasoning_budget = -1;
+  // Model-family-specific thinking params are passed via extraBody
+  // (built by buildLlamacppThinkParams in thinking.js).
+  // Supports: reasoning_budget, chat_template_kwargs, reasoning_effort, etc.
+  // Fallback: if think param is passed directly (legacy), convert to reasoning_budget.
+  if (Object.keys(extraBody).length > 0) {
+    Object.assign(body, extraBody);
+  } else if (think !== undefined) {
+    // Legacy fallback for direct think param
+    if (think === true || think === 'high' || think === 'medium') {
+      body.reasoning_budget = -1;
+    } else {
+      body.reasoning_budget = 0;
+    }
   }
 
   const res = await fetch(`${LLAMACPP_URL()}/v1/chat/completions`, {

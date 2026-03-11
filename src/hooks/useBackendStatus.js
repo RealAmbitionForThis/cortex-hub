@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 export function useBackendStatus() {
   const [connected, setConnected] = useState(false);
   const [models, setModels] = useState([]);
+  const [serverProps, setServerProps] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -15,6 +16,7 @@ export function useBackendStatus() {
         const data = await res.json();
         setConnected(data.connected);
         setModels(data.models || []);
+        setServerProps(data.serverProps || null);
       } else {
         setConnected(false);
       }
@@ -29,5 +31,5 @@ export function useBackendStatus() {
     refresh();
   }, [refresh]);
 
-  return { connected, models, loading, refresh };
+  return { connected, models, serverProps, loading, refresh };
 }
