@@ -4,7 +4,7 @@ function LLAMACPP_URL() {
   return resolveLlamacppUrl();
 }
 
-export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think }) {
+export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think, extraBody = {} }) {
   const body = {
     model: model || 'default',
     messages,
@@ -60,6 +60,9 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   } else if (think === 'medium') {
     body.reasoning_budget = -1;
   }
+
+  // Merge any extra body params (e.g. chat_template_kwargs for Qwen/Kimi thinking)
+  Object.assign(body, extraBody);
 
   const res = await fetch(`${LLAMACPP_URL()}/v1/chat/completions`, {
     method: 'POST',

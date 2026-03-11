@@ -19,7 +19,7 @@ function getMainModel(db, overrideModel) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, message, model, reasoningLevel, attachments, enabledTools, samplingParams, projectId, systemPromptOverride, extraAnalyze } = body;
+    const { conversationId, message, model, reasoningLevel, thinkingTemplate, attachments, enabledTools, samplingParams, projectId, systemPromptOverride, extraAnalyze } = body;
     const db = getDb();
 
     const convId = conversationId || await createConversation(db, model, projectId, systemPromptOverride);
@@ -198,7 +198,7 @@ export async function POST(request) {
     // Send debug info so the frontend can show exact inputs
     send({ type: 'debug', systemPrompt, messagesCount: messages.length, projectPrompt: projectPrompt || null, model: mainModel });
 
-    streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions });
+    streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, thinkingTemplate, ollamaOptions });
 
     return new Response(stream, {
       headers: {
@@ -212,18 +212,42 @@ export async function POST(request) {
   }
 }
 
-async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions }) {
+async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, thinkingTemplate, ollamaOptions }) {
   try {
-    // Map reasoning level to the think parameter.
-    // gpt-oss models use string values ("low"/"medium"/"high"), everything else uses boolean.
-    const isGptOss = (mainModel || '').toLowerCase().includes('gpt-oss');
+    // Resolve thinking template: 'auto' detects from model name, otherwise use explicit selection
+    const template = thinkingTemplate || 'auto';
+    const nameLower = (mainModel || '').toLowerCase();
+    const resolvedTemplate = template === 'auto'
+      ? (nameLower.includes('gpt-oss') ? 'gpt-oss'
+        : nameLower.includes('qwq') || nameLower.includes('qwen3') || nameLower.includes('bailing') ? 'qwen'
+        : nameLower.includes('kimi') ? 'kimi'
+        : nameLower.includes('deepseek') ? 'deepseek'
+        : 'generic')
+      : template;
+
+    // Map reasoning level + template to the think parameter.
+    // gpt-oss: string values ("low"/"medium"/"high")
+    // qwen/kimi/deepseek/generic: boolean (off = false, on = true)
     let thinkParam;
-    if (isGptOss) {
+    if (resolvedTemplate === 'gpt-oss') {
       thinkParam = reasoningLevel || 'medium';
     } else {
       thinkParam = reasoningLevel === 'low' ? false : true;
     }
-    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions, think: thinkParam });
+
+    // For llama-server with qwen/kimi templates, also send chat_template_kwargs
+    const extraBody = {};
+    if (getBackend() === 'llamacpp' && reasoningLevel !== 'low') {
+      if (resolvedTemplate === 'qwen' || resolvedTemplate === 'kimi') {
+        extraBody.chat_template_kwargs = { enable_thinking: true };
+      }
+    } else if (getBackend() === 'llamacpp' && reasoningLevel === 'low') {
+      if (resolvedTemplate === 'qwen' || resolvedTemplate === 'kimi') {
+        extraBody.chat_template_kwargs = { enable_thinking: false };
+      }
+    }
+
+    const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions, think: thinkParam, extraBody });
     let fullContent = '';
     let thinkingContent = '';
     let toolCalls = [];

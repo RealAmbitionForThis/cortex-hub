@@ -53,7 +53,7 @@ export function useChat() {
     }
   }, []);
 
-  const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, samplingParams, projectId, systemPromptOverride, extraAnalyze }) => {
+  const sendMessage = useCallback(async ({ message, model, reasoningLevel, thinkingTemplate, enabledTools, attachments, samplingParams, projectId, systemPromptOverride, extraAnalyze }) => {
     setStreaming(true);
 
     // Set analysis state to analyzing if extra-analyze is enabled
@@ -99,6 +99,7 @@ export function useChat() {
           message: fullMessage,
           model,
           reasoningLevel,
+          thinkingTemplate,
           enabledTools,
           samplingParams,
           projectId,

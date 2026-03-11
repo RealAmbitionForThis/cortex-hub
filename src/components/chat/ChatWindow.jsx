@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRegenerate, modelName, conversationId, conversationMeta, analysisState }) {
   const [input, setInput] = useState('');
   const [reasoningLevel, setReasoningLevel] = useState('medium');
+  const [thinkingTemplate, setThinkingTemplate] = useState('auto');
   const [enabledTools, setEnabledTools] = useState({ web_search: true, tools: true });
   const [attachments, setAttachments] = useState([]);
   const [chatSettings, setChatSettings] = useState(getDefaults);
@@ -77,6 +78,7 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
     onSend({
       message: trimmed,
       reasoningLevel,
+      thinkingTemplate,
       enabledTools,
       attachments,
       samplingParams: buildOllamaOptions(chatSettings),
@@ -165,7 +167,7 @@ export function ChatWindow({ messages, streaming, onSend, onEdit, onDelete, onRe
 
           {/* Controls row */}
           <div className="flex items-center gap-1 flex-wrap">
-            <ReasoningLevelPicker value={reasoningLevel} onChange={setReasoningLevel} modelName={modelName} />
+            <ReasoningLevelPicker value={reasoningLevel} onChange={setReasoningLevel} thinkingTemplate={thinkingTemplate} onTemplateChange={setThinkingTemplate} />
             <ToolToggle enabledTools={enabledTools} onToggle={handleToolToggle} />
             <Button
               variant="ghost"
