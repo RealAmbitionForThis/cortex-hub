@@ -7,25 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Trash2, Download, RefreshCw, HardDrive } from 'lucide-react';
+import { formatDate } from '@/lib/utils/date';
+import { formatSize } from '@/lib/utils/format';
 
 const QUICK_PULL = ['gpt-oss:20b', 'qwen2.5-vl:7b', 'nomic-embed-text', 'qwen3-coder-next'];
-
-function formatSize(bytes) {
-  if (!bytes) return 'N/A';
-  const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
-  const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(0)} MB`;
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return 'N/A';
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
 
 export function OllamaModelManager() {
   const [models, setModels] = useState([]);

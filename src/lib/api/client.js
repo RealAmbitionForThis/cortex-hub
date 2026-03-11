@@ -1,0 +1,23 @@
+/**
+ * Lightweight client-side API helpers.
+ * Eliminates repeated fetch + headers + JSON.stringify boilerplate.
+ */
+
+async function request(url, method, body) {
+  const opts = { method };
+  if (body !== undefined) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+export const api = {
+  get: (url) => request(url, 'GET'),
+  post: (url, body) => request(url, 'POST', body),
+  put: (url, body) => request(url, 'PUT', body),
+  del: (url, body) => request(url, 'DELETE', body),
+};

@@ -1,4 +1,4 @@
-import { listModels, checkConnection } from './provider';
+import { listModels } from './provider';
 
 export async function getAvailableModels() {
   try {
@@ -11,13 +11,4 @@ export async function getAvailableModels() {
   } catch {
     return [];
   }
-}
-
-export async function getOllamaStatus() {
-  const connected = await checkConnection();
-  if (!connected) {
-    return { connected: false, models: [] };
-  }
-  const models = await getAvailableModels();
-  return { connected: true, models };
 }

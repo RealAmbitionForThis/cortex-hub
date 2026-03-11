@@ -122,7 +122,7 @@ function createCoreTables(db) {
       original_content TEXT,
       version INTEGER DEFAULT 1,
       parent_message_id TEXT,
-      tokens_used INTEGER,
+      tokens_used TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );

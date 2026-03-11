@@ -41,6 +41,14 @@ export function getSettingValue(db, key, fallback = null) {
   try { return JSON.parse(row.value); } catch { return fallback; }
 }
 
+export function formatSize(bytes) {
+  if (!bytes) return '';
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  const mb = bytes / (1024 * 1024);
+  return `${Math.round(mb)} MB`;
+}
+
 export function slugify(text) {
   return text
     .toLowerCase()

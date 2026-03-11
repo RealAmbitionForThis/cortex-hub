@@ -17,7 +17,8 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   });
 
   if (!res.ok) {
-    throw new Error(`Ollama chat error: ${res.status}`);
+    const errBody = await res.text().catch(() => '');
+    throw new Error(errBody || `Ollama chat error: ${res.status}`);
   }
 
   return res;

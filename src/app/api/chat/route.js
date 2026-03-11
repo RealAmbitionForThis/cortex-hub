@@ -149,7 +149,7 @@ export async function POST(request) {
       tools = enrichedContext.filteredTools;
     } else {
       // Standard: retrieve all memories and all tools
-      memories = await retrieveRelevantMemories({ query: message });
+      memories = await retrieveRelevantMemories({ query: message, clusterIds: activeClusters.map(c => c.id) });
       tools = getToolDefinitions();
     }
 
@@ -317,7 +317,7 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
       }
 
       if (currentContent) {
-        saveAssistantMessage(db, convId, currentContent, JSON.stringify(currentToolCalls), reasoningLevel);
+        saveAssistantMessage(db, convId, currentContent, JSON.stringify(currentToolCalls), reasoningLevel, totalStats);
       }
 
       currentMessages = [

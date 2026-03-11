@@ -16,6 +16,7 @@ import {
   Play, Square, FolderOpen, ChevronRight, ChevronDown, ArrowUp,
   Save, Trash2, RefreshCw, Search, File, Folder, X, Plus,
 } from 'lucide-react';
+import { formatSize } from '@/lib/utils/format';
 
 // --- Default launch params ---
 const DEFAULT_ARGS = {
@@ -29,13 +30,6 @@ const DEFAULT_ARGS = {
   embedding: false, pooling: 'none',
   ropeScaling: 'none', ropeFreqBase: 0, ropeFreqScale: 0,
 };
-
-function formatSize(bytes) {
-  if (!bytes) return '';
-  const gb = bytes / (1024 * 1024 * 1024);
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
-  return `${Math.round(bytes / (1024 * 1024))} MB`;
-}
 
 // --- Collapsible Section ---
 function Section({ title, children, defaultOpen = false }) {

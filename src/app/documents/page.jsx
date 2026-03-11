@@ -17,7 +17,8 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { DocumentSearch } from '@/components/dashboards/DocumentSearch';
-import { FileText, Plus, Trash2, Upload, ScanLine, Search } from 'lucide-react';
+import { FileText, Plus, Trash2, ScanLine } from 'lucide-react';
+import { formatDate } from '@/lib/utils/date';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
@@ -168,7 +169,7 @@ export default function DocumentsPage() {
                         <p className="font-medium text-sm">{d.title}</p>
                         <div className="flex gap-2 mt-1">
                           <Badge variant="secondary">{d.type}</Badge>
-                          <span className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(d.created_at)}</span>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(d.id)}>

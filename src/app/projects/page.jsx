@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/layout/AppShell';
@@ -10,15 +10,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import {
-  FolderOpen, Plus, Pencil, Trash2, MessageSquare, FileText, Upload,
+  FolderOpen, Plus, Pencil, Trash2, MessageSquare, FileText,
   X, Save, ChevronRight, ScrollText, Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/date';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -32,7 +32,6 @@ export default function ProjectsPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -249,7 +248,7 @@ export default function ProjectsPage() {
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {new Date(p.updated_at || p.created_at).toLocaleDateString()}
+                        {formatDate(p.updated_at || p.created_at)}
                       </span>
                       {p.conversation_count > 0 && (
                         <span className="flex items-center gap-1">
@@ -423,7 +422,7 @@ export default function ProjectsPage() {
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">{chat.title || 'New Chat'}</p>
                               <p className="text-xs text-muted-foreground">
-                                {chat.model} · {new Date(chat.updated_at).toLocaleDateString()}
+                                {chat.model} · {formatDate(chat.updated_at)}
                               </p>
                             </div>
                             <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
