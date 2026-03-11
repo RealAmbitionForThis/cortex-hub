@@ -15,6 +15,9 @@ function addLog(line) {
 }
 
 function findBinary() {
+  const isWindows = process.platform === 'win32';
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+
   // Check DB setting first
   try {
     const db = getDb();
@@ -26,18 +29,33 @@ function findBinary() {
   } catch { /* fall through */ }
 
   // Check common locations
-  const candidates = [
-    'llama-server',
-    '/usr/local/bin/llama-server',
-    '/usr/bin/llama-server',
-    `${process.env.HOME}/.local/bin/llama-server`,
-    `${process.env.HOME}/llama.cpp/build/bin/llama-server`,
-  ];
+  const candidates = isWindows
+    ? [
+        'llama-server.exe',
+        `${home}\\llama.cpp\\build\\bin\\Release\\llama-server.exe`,
+        `${home}\\llama.cpp\\build\\bin\\llama-server.exe`,
+      ]
+    : [
+        'llama-server',
+        '/usr/local/bin/llama-server',
+        '/usr/bin/llama-server',
+        `${home}/.local/bin/llama-server`,
+        `${home}/llama.cpp/build/bin/llama-server`,
+      ];
 
   for (const bin of candidates) {
     try {
-      execSync(`which ${bin} 2>/dev/null || test -x ${bin}`, { timeout: 3000 });
+      if (isWindows) {
+        execSync(`where ${bin}`, { timeout: 3000, stdio: 'ignore' });
+      } else {
+        execSync(`which ${bin} 2>/dev/null || test -x ${bin}`, { timeout: 3000 });
+      }
       return bin;
+    } catch { /* not found */ }
+
+    // Also check if the path exists directly on disk
+    try {
+      if (fs.existsSync(bin)) return bin;
     } catch { /* not found */ }
   }
 
