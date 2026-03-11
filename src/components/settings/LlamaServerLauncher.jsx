@@ -238,6 +238,9 @@ export function LlamaServerLauncher({ settings, onSave }) {
   const [configName, setConfigName] = useState('');
   const [log, setLog] = useState([]);
   const logRef = useRef(null);
+  const [binaryPath, setBinaryPath] = useState(() => {
+    try { return settings.llamacpp_binary_path ? JSON.parse(settings.llamacpp_binary_path) : ''; } catch { return ''; }
+  });
 
   const savedDirs = (() => {
     try { return JSON.parse(settings.llamacpp_model_dirs || '[]'); } catch { return []; }
@@ -408,8 +411,8 @@ export function LlamaServerLauncher({ settings, onSave }) {
             ? `Running on :${status.port} (PID ${status.pid})`
             : 'Stopped'}
         </span>
-        {!status.binaryFound && !status.running && (
-          <Badge variant="destructive" className="text-xs">llama-server not found in PATH</Badge>
+        {!status.binaryFound && !status.running && !binaryPath && (
+          <Badge variant="destructive" className="text-xs">llama-server not found</Badge>
         )}
         <div className="ml-auto flex gap-2">
           {!status.running ? (
@@ -424,6 +427,22 @@ export function LlamaServerLauncher({ settings, onSave }) {
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Binary path */}
+      <div className={`space-y-2 ${!status.binaryFound && !binaryPath ? 'p-3 rounded-md border border-destructive/50 bg-destructive/5' : ''}`}>
+        <Label>llama-server Binary Path</Label>
+        <Input
+          value={binaryPath}
+          onChange={(e) => setBinaryPath(e.target.value)}
+          onBlur={() => { if (binaryPath !== (settings.llamacpp_binary_path ? JSON.parse(settings.llamacpp_binary_path) : '')) { onSave({ llamacpp_binary_path: JSON.stringify(binaryPath) }); toast.success('Binary path saved'); checkStatus(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { onSave({ llamacpp_binary_path: JSON.stringify(binaryPath) }); toast.success('Binary path saved'); checkStatus(); } }}
+          placeholder="/path/to/llama-server"
+          className="font-mono text-sm"
+        />
+        <p className="text-xs text-muted-foreground">
+          Full path to the llama-server binary. Leave empty to search PATH automatically.
+        </p>
       </div>
 
       {/* Saved Configs */}
