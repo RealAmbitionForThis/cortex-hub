@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
-  Cpu, Database, HardDrive, Bell, Clock, Wifi, WifiOff, Monitor,
+  Database, Clock, Monitor,
 } from 'lucide-react';
 
 function formatUptime(seconds) {

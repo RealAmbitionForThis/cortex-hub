@@ -10,8 +10,8 @@ export const POST = withHandler(async (request) => {
     return badRequest('Invalid message');
   }
 
-  db.prepare('DELETE FROM messages WHERE conversation_id = ? AND created_at >= ?')
-    .run(msg.conversation_id, msg.created_at);
+  db.prepare('DELETE FROM messages WHERE conversation_id = ? AND id >= ?')
+    .run(msg.conversation_id, msg.id);
 
   return success({
     conversationId: msg.conversation_id,

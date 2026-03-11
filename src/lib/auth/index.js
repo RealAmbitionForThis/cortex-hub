@@ -2,8 +2,15 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { BCRYPT_SALT_ROUNDS, AUTH_TOKEN_EXPIRY_DAYS } from '@/lib/constants';
 
-function getSecret() {
-  const secret = process.env.CORTEX_JWT_SECRET || 'default-dev-secret-change-me-32chars';
+export function getJwtSecret() {
+  const secret = process.env.CORTEX_JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CORTEX_JWT_SECRET must be set in production');
+    }
+    console.warn('[auth] CORTEX_JWT_SECRET not set — using insecure dev default');
+    return new TextEncoder().encode('default-dev-secret-change-me-32chars');
+  }
   return new TextEncoder().encode(secret);
 }
 
@@ -26,7 +33,7 @@ export async function createToken() {
 
 export async function verifyToken(token) {
   try {
-    const secret = getSecret();
+    const secret = getJwtSecret();
     await jwtVerify(token, secret);
     return true;
   } catch {
@@ -35,6 +42,13 @@ export async function verifyToken(token) {
 }
 
 export async function getPasswordHash() {
-  const password = process.env.CORTEX_PASSWORD || 'changeme';
+  const password = process.env.CORTEX_PASSWORD;
+  if (!password) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CORTEX_PASSWORD must be set in production');
+    }
+    console.warn('[auth] CORTEX_PASSWORD not set — using insecure dev default');
+    return hashPassword('changeme');
+  }
   return hashPassword(password);
 }

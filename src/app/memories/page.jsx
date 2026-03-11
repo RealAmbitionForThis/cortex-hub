@@ -43,7 +43,7 @@ function MemoryList({ type }) {
   const [form, setForm] = useState({ content: '', category: 'fact', module: 'general' });
 
   const filtered = search
-    ? memories.filter((m) => m.content.toLowerCase().includes(search.toLowerCase()))
+    ? memories.filter((m) => m.content?.toLowerCase().includes(search.toLowerCase()))
     : memories;
 
   async function handleAdd() {

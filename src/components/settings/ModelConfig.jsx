@@ -184,7 +184,7 @@ export function ModelConfig({ settings, onSave }) {
 
 function SettingsParamControl({ param, value, onChange }) {
   if (param.type === 'slider') {
-    const display = Number.isInteger(param.step) ? value : value.toFixed(2);
+    const display = Number.isInteger(param.step) ? value : (value ?? 0).toFixed(2);
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">

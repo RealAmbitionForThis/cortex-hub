@@ -12,11 +12,12 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { Plus, Trash2, FileText, X } from 'lucide-react';
+import { DEFAULT_ACCENT_COLOR } from '@/lib/constants';
 
 export function ClusterManager() {
   const [clusters, setClusters] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [newCluster, setNewCluster] = useState({ name: '', description: '', system_prompt_addition: '', icon: '\u{1F4C1}', color: '#6366f1' });
+  const [newCluster, setNewCluster] = useState({ name: '', description: '', system_prompt_addition: '', icon: '\u{1F4C1}', color: DEFAULT_ACCENT_COLOR });
   const [pendingFiles, setPendingFiles] = useState([]);
 
   useEffect(() => { fetchClusters(); }, []);
@@ -72,7 +73,7 @@ export function ClusterManager() {
       toast.success('Cluster created');
       fetchClusters();
       setShowCreate(false);
-      setNewCluster({ name: '', description: '', system_prompt_addition: '', icon: '\u{1F4C1}', color: '#6366f1' });
+      setNewCluster({ name: '', description: '', system_prompt_addition: '', icon: '\u{1F4C1}', color: DEFAULT_ACCENT_COLOR });
       setPendingFiles([]);
     } catch {
       toast.error('Failed to create cluster');

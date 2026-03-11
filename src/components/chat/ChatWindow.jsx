@@ -78,7 +78,6 @@ export function ChatWindow({ messages, streaming, onSend, onStop, onEdit, onDele
       message: trimmed,
       reasoningLevel,
       enabledTools,
-      attachments,
       samplingParams: buildOllamaOptions(chatSettings),
       projectId,
       systemPromptOverride: systemPromptOverride || undefined,

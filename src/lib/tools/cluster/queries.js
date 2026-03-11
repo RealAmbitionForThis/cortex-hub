@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { DEFAULT_ACCENT_COLOR } from '@/lib/constants';
 
 export function getAllClusters() {
   return getDb().prepare('SELECT * FROM clusters ORDER BY name').all();
@@ -13,7 +14,7 @@ export function createCluster({ name, description, icon, color, system_prompt_ad
   const id = uuidv4();
   getDb().prepare(
     'INSERT INTO clusters (id, name, description, system_prompt_addition, icon, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, datetime(\'now\'), datetime(\'now\'))'
-  ).run(id, name, description || null, system_prompt_addition || null, icon || '📁', color || '#6366f1');
+  ).run(id, name, description || null, system_prompt_addition || null, icon || '📁', color || DEFAULT_ACCENT_COLOR);
   return id;
 }
 

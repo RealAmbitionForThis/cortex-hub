@@ -3,6 +3,7 @@ import { chatCompletion } from '@/lib/llm/provider';
 import { textToVector, vectorToBuffer } from './embeddings';
 import { findSimilarMemory, shouldUpdate } from './dedup';
 import { v4 as uuidv4 } from 'uuid';
+import { DEFAULT_MAIN_MODEL } from '@/lib/constants';
 import { parseJsonSafe } from '@/lib/utils/format';
 
 const ANALYSIS_PROMPT = `Analyze the following conversation messages and extract structured information.
@@ -41,7 +42,7 @@ export async function analyzeMessages(messages, model) {
     .join('\n');
 
   const prompt = ANALYSIS_PROMPT.replace('{messages}', messageText);
-  const mainModel = model || process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
+  const mainModel = model || process.env.CORTEX_DEFAULT_MAIN_MODEL || DEFAULT_MAIN_MODEL;
 
   try {
     const res = await chatCompletion({

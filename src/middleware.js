@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { AUTH_COOKIE_NAME } from '@/lib/constants';
+import { getJwtSecret } from '@/lib/auth';
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout'];
 
@@ -8,14 +9,12 @@ function isPublicPath(pathname) {
   if (pathname.startsWith('/_next')) return true;
   if (pathname.startsWith('/comfyui-outputs')) return true;
   if (pathname === '/favicon.ico') return true;
-  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 }
 
 async function isValidToken(token) {
   try {
-    const secret = new TextEncoder().encode(
-      process.env.CORTEX_JWT_SECRET || 'default-dev-secret-change-me-32chars'
-    );
+    const secret = getJwtSecret();
     await jwtVerify(token, secret);
     return true;
   } catch {

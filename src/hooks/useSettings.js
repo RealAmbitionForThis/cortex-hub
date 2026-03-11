@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 export function useSettings() {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -13,8 +14,8 @@ export function useSettings() {
         const data = await res.json();
         setSettings(data.settings || {});
       }
-    } catch {
-      // Settings not available yet
+    } catch (err) {
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -35,7 +36,8 @@ export function useSettings() {
         setSettings((prev) => ({ ...prev, ...updates }));
       }
       return res.ok;
-    } catch {
+    } catch (err) {
+      setError(err);
       return false;
     }
   }, []);
@@ -44,5 +46,5 @@ export function useSettings() {
     return settings[key] ?? defaultValue;
   }, [settings]);
 
-  return { settings, loading, updateSettings, getSetting, refresh: fetchSettings };
+  return { settings, loading, error, updateSettings, getSetting, refresh: fetchSettings };
 }

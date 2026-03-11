@@ -45,6 +45,10 @@ function parseThinkingFromContent(content) {
     }
   }
 
+  // Reset lastIndex before re-using regexes (they have the `g` flag and exec() mutated it)
+  thinkRegex.lastIndex = 0;
+  thinkingRegex.lastIndex = 0;
+
   // Remove all think/thinking blocks from the response
   let response = content
     .replace(thinkRegex, '')
@@ -85,6 +89,9 @@ function ThinkingBlock({ thinking, isStreaming }) {
 }
 
 export function StreamingText({ content, thinking: liveThinking, isStreaming, isUser }) {
+  // All hooks must be called before any early returns (Rules of Hooks)
+  const parsed = useMemo(() => parseThinkingFromContent(content), [content]);
+
   if (!content && !liveThinking) return null;
 
   if (isUser) {
@@ -94,7 +101,6 @@ export function StreamingText({ content, thinking: liveThinking, isStreaming, is
   }
 
   // Use live thinking from SSE if available, otherwise parse from stored content
-  const parsed = useMemo(() => parseThinkingFromContent(content), [content]);
   const thinkingText = liveThinking || parsed.thinking;
   const responseText = liveThinking ? content : (parsed.response || content);
 

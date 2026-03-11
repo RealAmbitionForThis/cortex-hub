@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { Wrench, Globe, Calculator, Database, FileText, Bell, Search, Car, Heart, Users, DollarSign, Paintbrush, Calendar } from 'lucide-react';
+import { Wrench, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TOOL_CATEGORIES = [

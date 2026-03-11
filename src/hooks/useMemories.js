@@ -6,27 +6,29 @@ export function useMemories(type, module) {
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchMemories = useCallback(async () => {
+  const fetchMemories = useCallback(async (signal) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (type) params.set('type', type);
       if (module) params.set('module', module);
 
-      const res = await fetch(`/api/memories?${params}`);
+      const res = await fetch(`/api/memories?${params}`, { signal });
       if (res.ok) {
         const data = await res.json();
         setMemories(data.memories || []);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      if (err.name !== 'AbortError') { /* ignore */ }
     } finally {
       setLoading(false);
     }
   }, [type, module]);
 
   useEffect(() => {
-    fetchMemories();
+    const controller = new AbortController();
+    fetchMemories(controller.signal);
+    return () => controller.abort();
   }, [fetchMemories]);
 
   const addMemory = useCallback(async (memory) => {

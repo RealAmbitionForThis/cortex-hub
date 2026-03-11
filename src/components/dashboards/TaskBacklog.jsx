@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils/date';
 import { cn } from '@/lib/utils';
 import { PRIORITY_COLORS } from '@/lib/constants';
 
-export function TaskBacklog({ tasks = [], onComplete, onEdit }) {
+export function TaskBacklog({ tasks = [], onComplete }) {
   return (
     <div className="space-y-2">
       {tasks.map((task) => (

@@ -27,30 +27,3 @@ export async function queueWorkflow(workflowJson, clientId) {
   }
   return res.json();
 }
-
-export async function getHistory(promptId) {
-  const res = await fetch(`${COMFYUI_URL}/history/${promptId}`);
-  if (!res.ok) throw new Error('Failed to fetch history');
-  return res.json();
-}
-
-export async function getImage(filename, subfolder, type) {
-  const params = new URLSearchParams({ filename, subfolder: subfolder || '', type: type || 'output' });
-  const res = await fetch(`${COMFYUI_URL}/view?${params}`);
-  if (!res.ok) throw new Error('Failed to fetch image');
-  const arrayBuffer = await res.arrayBuffer();
-  return Buffer.from(arrayBuffer);
-}
-
-export async function uploadImage(imageBuffer, filename) {
-  const formData = new FormData();
-  const blob = new Blob([imageBuffer]);
-  formData.append('image', blob, filename);
-
-  const res = await fetch(`${COMFYUI_URL}/upload/image`, {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) throw new Error('Failed to upload image');
-  return res.json();
-}

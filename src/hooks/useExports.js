@@ -24,6 +24,9 @@ export function useExports() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ module: mod, format }),
       });
+      if (!res.ok) {
+        throw new Error(`Export request failed with status ${res.status}`);
+      }
       const data = await res.json();
       fetchExports();
       return data;

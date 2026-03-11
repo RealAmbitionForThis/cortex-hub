@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { DEFAULT_COMFYUI_URL } from '@/lib/constants';
 
 export function ComfyUISettings({ settings, onSave }) {
-  const [url, setUrl] = useState(settings?.comfyui_url || 'http://localhost:8188');
+  const [url, setUrl] = useState(settings?.comfyui_url || DEFAULT_COMFYUI_URL);
   const [connected, setConnected] = useState(null);
   const [testing, setTesting] = useState(false);
   const [systemStats, setSystemStats] = useState(null);

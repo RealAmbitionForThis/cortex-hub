@@ -21,10 +21,11 @@ export function useChat() {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
-  // Clear stuck timeout on unmount
+  // Clear stuck timeout and abort any active stream on unmount
   useEffect(() => {
     return () => {
       if (stuckTimeoutRef.current) clearTimeout(stuckTimeoutRef.current);
+      abortRef.current?.abort();
     };
   }, []);
 

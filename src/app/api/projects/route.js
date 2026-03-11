@@ -1,6 +1,7 @@
 import { success, badRequest, withHandler } from '@/lib/api/response';
 import { getDb, updateRow } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { DEFAULT_ACCENT_COLOR } from '@/lib/constants';
 
 export const GET = withHandler(async () => {
   const db = getDb();
@@ -19,7 +20,7 @@ export const POST = withHandler(async (request) => {
   const id = uuidv4();
   db.prepare(
     'INSERT INTO projects (id, name, system_prompt, icon, color) VALUES (?, ?, ?, ?, ?)'
-  ).run(id, body.name, body.system_prompt || '', body.icon || '\u{1F4C2}', body.color || '#6366f1');
+  ).run(id, body.name, body.system_prompt || '', body.icon || '\u{1F4C2}', body.color || DEFAULT_ACCENT_COLOR);
 
   return success({ id });
 });

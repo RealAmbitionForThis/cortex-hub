@@ -11,7 +11,9 @@ import { processAnalysis, getAvailableModules } from '@/lib/analysis/process-ana
 import { detectModelFamily, buildOllamaThinkParam, buildLlamacppThinkParams } from '@/lib/llm/thinking';
 import { getSettingValue } from '@/lib/utils/format';
 
-const DEFAULT_MODEL = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
+import { DEFAULT_MAIN_MODEL } from '@/lib/constants';
+
+const DEFAULT_MODEL = process.env.CORTEX_DEFAULT_MAIN_MODEL || DEFAULT_MAIN_MODEL;
 
 function getMainModel(db, overrideModel) {
   return overrideModel || getSettingValue(db, 'main_model', DEFAULT_MODEL);

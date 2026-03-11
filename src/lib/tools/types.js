@@ -19,5 +19,3 @@
  * @property {*} result
  * @property {string} [error]
  */
-
-export const TOOL_RESULT_MAX_LENGTH = 4000;

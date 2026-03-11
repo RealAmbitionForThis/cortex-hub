@@ -17,7 +17,7 @@ export const SAMPLING_PARAMS = {
   typical_p:        { key: 'typical_p',         label: 'Typical P',         type: 'slider', default: 1.0,  min: 0,    max: 1,      step: 0.05, group: 'sampling',   desc: 'Locally typical sampling threshold (1.0 = disabled)' },
 
   // --- Generation ---
-  num_ctx:          { key: 'num_ctx',           label: 'Context Window',    type: 'slider', default: DEFAULT_CONTEXT_WINDOW, min: 1024, max: 131072, step: 1024, group: 'generation', desc: 'Max tokens for context (Ollama default 2048)' },
+  num_ctx:          { key: 'num_ctx',           label: 'Context Window',    type: 'slider', default: DEFAULT_CONTEXT_WINDOW, min: 1024, max: 131072, step: 1024, group: 'generation', desc: 'Max tokens for context (default 4096)' },
   num_predict:      { key: 'num_predict',       label: 'Max Tokens',        type: 'number', default: -1,   min: -1,   max: 32768,  step: 1,    group: 'generation', desc: 'Max tokens to generate (-1 = unlimited)' },
   num_batch:        { key: 'num_batch',         label: 'Batch Size',        type: 'number', default: 512,  min: 1,    max: 4096,   step: 1,    group: 'generation', desc: 'Prompt processing batch size (higher = faster, more VRAM)' },
   num_keep:         { key: 'num_keep',          label: 'Keep Tokens',       type: 'number', default: 0,    min: -1,   max: 8192,   step: 1,    group: 'generation', desc: 'Tokens kept from initial prompt on context shift (-1 = all, 0 = none)' },

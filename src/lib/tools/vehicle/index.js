@@ -20,12 +20,13 @@ export const vehicleTools = [
     parameters: { type: 'object', properties: { vehicle_id: { type: 'string' }, make: { type: 'string' }, model: { type: 'string' }, year: { type: 'number' }, current_mileage: { type: 'number' }, nickname: { type: 'string' } }, required: ['vehicle_id'] },
     handler: ({ vehicle_id, ...updates }) => {
       const db = getDb();
+      const ALLOWED = ['make', 'model', 'year', 'current_mileage', 'nickname'];
       const sets = [];
       const vals = [];
       for (const [k, v] of Object.entries(updates)) {
-        if (v !== undefined) { sets.push(`${k} = ?`); vals.push(v); }
+        if (v !== undefined && ALLOWED.includes(k)) { sets.push(`${k} = ?`); vals.push(v); }
       }
-      if (sets.length === 0) return { success: false, error: 'No fields to update' };
+      if (sets.length === 0) return { success: false, error: 'No valid fields to update' };
       vals.push(vehicle_id);
       db.prepare(`UPDATE vehicles SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
       return { success: true };

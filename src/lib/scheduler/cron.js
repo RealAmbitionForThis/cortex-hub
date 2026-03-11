@@ -23,14 +23,3 @@ export function stopJob(id) {
     jobs.delete(id);
   }
 }
-
-export function stopAllJobs() {
-  for (const [id, job] of jobs) {
-    job.stop();
-  }
-  jobs.clear();
-}
-
-export function getRunningJobs() {
-  return Array.from(jobs.keys());
-}

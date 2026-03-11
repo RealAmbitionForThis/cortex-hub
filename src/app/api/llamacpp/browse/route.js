@@ -11,6 +11,7 @@ export const GET = withHandler(async (request) => {
   if (searchDir && query) {
     // Recursive GGUF search
     const absPath = path.resolve(searchDir);
+    if (absPath.includes('..')) return badRequest('Invalid path');
     if (!fs.existsSync(absPath)) return badRequest('Directory not found');
 
     const results = [];

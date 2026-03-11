@@ -7,6 +7,7 @@ export function useBackendStatus() {
   const [models, setModels] = useState([]);
   const [serverProps, setServerProps] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -20,8 +21,9 @@ export function useBackendStatus() {
       } else {
         setConnected(false);
       }
-    } catch {
+    } catch (err) {
       setConnected(false);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -31,5 +33,5 @@ export function useBackendStatus() {
     refresh();
   }, [refresh]);
 
-  return { connected, models, serverProps, loading, refresh };
+  return { connected, models, serverProps, loading, error, refresh };
 }

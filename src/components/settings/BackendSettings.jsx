@@ -11,11 +11,12 @@ import { OllamaModelManager } from '@/components/settings/OllamaModelManager';
 import { SystemDashboard } from '@/components/shared/SystemDashboard';
 import { LlamaServerLauncher } from '@/components/settings/LlamaServerLauncher';
 import { RefreshCw, Plus, X } from 'lucide-react';
+import { DEFAULT_OLLAMA_URL, DEFAULT_LLAMACPP_URL } from '@/lib/constants';
 
 export function BackendSettings({ settings, onSave }) {
   const [backend, setBackend] = useState(settings.cortex_backend || 'ollama');
-  const [ollamaUrl, setOllamaUrl] = useState(settings.ollama_url || 'http://localhost:11434');
-  const [llamacppUrl, setLlamacppUrl] = useState(settings.llamacpp_url || 'http://localhost:8080');
+  const [ollamaUrl, setOllamaUrl] = useState(settings.ollama_url || DEFAULT_OLLAMA_URL);
+  const [llamacppUrl, setLlamacppUrl] = useState(settings.llamacpp_url || DEFAULT_LLAMACPP_URL);
   const [embeddingUrl, setEmbeddingUrl] = useState(settings.cortex_embedding_url || '');
   const [connected, setConnected] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -26,8 +27,8 @@ export function BackendSettings({ settings, onSave }) {
 
   useEffect(() => {
     setBackend(settings.cortex_backend || 'ollama');
-    setOllamaUrl(settings.ollama_url || 'http://localhost:11434');
-    setLlamacppUrl(settings.llamacpp_url || 'http://localhost:8080');
+    setOllamaUrl(settings.ollama_url || DEFAULT_OLLAMA_URL);
+    setLlamacppUrl(settings.llamacpp_url || DEFAULT_LLAMACPP_URL);
     setEmbeddingUrl(settings.cortex_embedding_url || '');
     try { const raw = settings.llamacpp_models; setLlamaModels(raw ? JSON.parse(raw) : []); } catch { setLlamaModels([]); }
   }, [settings]);
@@ -85,7 +86,7 @@ export function BackendSettings({ settings, onSave }) {
     } else {
       updates.llamacpp_url = llamacppUrl;
       updates.cortex_embedding_url = embeddingUrl;
-      updates.llamacpp_models = JSON.stringify(llamaModels);
+      updates.llamacpp_models = llamaModels;
     }
     onSave(updates);
     toast.success('Backend settings saved');

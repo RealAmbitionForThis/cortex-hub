@@ -3,6 +3,7 @@ import { chatCompletion } from '@/lib/llm/provider';
 import { textToVector, vectorToBuffer } from './embeddings';
 import { v4 as uuidv4 } from 'uuid';
 import { parseJsonSafe } from '@/lib/utils/format';
+import { DEFAULT_MAIN_MODEL } from '@/lib/constants';
 import { toISODate } from '@/lib/utils/date';
 
 const DAILY_LOG_PROMPT = `Summarize today's conversations into a daily log.
@@ -35,7 +36,7 @@ export async function generateDailyLog() {
 
   const messageText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
   const prompt = DAILY_LOG_PROMPT.replace('{messages}', messageText);
-  const model = process.env.CORTEX_DEFAULT_MAIN_MODEL || 'gpt-oss:20b';
+  const model = process.env.CORTEX_DEFAULT_MAIN_MODEL || DEFAULT_MAIN_MODEL;
 
   try {
     const res = await chatCompletion({

@@ -11,7 +11,7 @@ const COLUMNS = [
   { key: 'done', label: 'Done', color: 'border-t-green-500' },
 ];
 
-export function TaskKanban({ tasks = [], onStatusChange }) {
+export function TaskKanban({ tasks = [] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {COLUMNS.map((col) => {

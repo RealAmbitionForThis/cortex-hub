@@ -5,7 +5,7 @@ import { Wrench, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { truncate } from '@/lib/utils/format';
 
-export function ToolCallDisplay({ toolName, toolArgs, content, toolResult }) {
+export function ToolCallDisplay({ toolName, toolArgs, toolResult }) {
   const [expanded, setExpanded] = useState(false);
 
   return (

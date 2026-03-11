@@ -17,6 +17,9 @@ export function MemorySettings({ settings, onSave }) {
   useEffect(() => {
     setInterval(settings.memory_interval_ms || 300000);
     setRetrievalCount(settings.memory_retrieval_count || 10);
+    setThreshold(settings.memory_similarity_threshold || 0.92);
+    setAutoAnalyze(settings.memory_auto_analyze !== false);
+    setDailyLogTime(settings.daily_log_time || '23:59');
   }, [settings]);
 
   function handleSave() {
