@@ -32,7 +32,7 @@ export function BackendSettings({ settings, onSave }) {
   const testConnection = useCallback(async () => {
     setTesting(true);
     try {
-      const res = await fetch('/api/ollama');
+      const res = await fetch('/api/backend/status');
       if (res.ok) {
         const data = await res.json();
         setConnected(data.connected);

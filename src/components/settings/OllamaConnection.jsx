@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusDot } from '@/components/shared/StatusDot';
-import { useOllama } from '@/hooks/useOllama';
+import { useOllamaStatus } from '@/hooks/useOllamaStatus';
 import { RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export function OllamaConnection({ settings, onSave }) {
-  const { connected, models, refresh, loading } = useOllama();
+  const { connected, models, refresh, loading } = useOllamaStatus();
   const [url, setUrl] = useState(settings.ollama_url || 'http://localhost:11434');
 
   useEffect(() => {

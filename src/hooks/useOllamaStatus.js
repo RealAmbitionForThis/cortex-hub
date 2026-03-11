@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export function useOllama() {
+export function useOllamaStatus() {
   const [connected, setConnected] = useState(false);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,16 +10,18 @@ export function useOllama() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/backend/status');
+      const res = await fetch('/api/ollama/status');
       if (res.ok) {
         const data = await res.json();
-        setConnected(data.connected);
+        setConnected(true);
         setModels(data.models || []);
       } else {
         setConnected(false);
+        setModels([]);
       }
     } catch {
       setConnected(false);
+      setModels([]);
     } finally {
       setLoading(false);
     }
