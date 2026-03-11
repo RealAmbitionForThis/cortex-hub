@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusDot } from '@/components/shared/StatusDot';
+import { OllamaModelManager } from '@/components/settings/OllamaModelManager';
+import { SystemDashboard } from '@/components/shared/SystemDashboard';
 import { RefreshCw, Plus, X } from 'lucide-react';
 
 export function BackendSettings({ settings, onSave }) {
@@ -36,19 +38,33 @@ export function BackendSettings({ settings, onSave }) {
       if (res.ok) {
         const data = await res.json();
         setConnected(data.connected);
+        toast[data.connected ? 'success' : 'error'](
+          data.connected ? 'Connected successfully' : 'Connection failed'
+        );
       } else {
         setConnected(false);
+        toast.error('Connection test failed');
       }
     } catch {
       setConnected(false);
+      toast.error('Connection test failed');
     } finally {
       setTesting(false);
     }
   }, []);
 
   useEffect(() => {
-    testConnection();
-  }, [testConnection]);
+    // Auto-test on mount (silent — no toast)
+    (async () => {
+      try {
+        const res = await fetch('/api/backend/status');
+        if (res.ok) {
+          const data = await res.json();
+          setConnected(data.connected);
+        }
+      } catch { setConnected(false); }
+    })();
+  }, []);
 
   function addLlamaModel() {
     const name = newModelName.trim();
@@ -159,6 +175,19 @@ export function BackendSettings({ settings, onSave }) {
       )}
 
       <Button onClick={handleSave}>Save</Button>
+
+      {/* Model Management — only for Ollama backend */}
+      {backend === 'ollama' && (
+        <>
+          <div className="border-t pt-6">
+            <OllamaModelManager />
+          </div>
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">System Dashboard</h3>
+            <SystemDashboard compact={false} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

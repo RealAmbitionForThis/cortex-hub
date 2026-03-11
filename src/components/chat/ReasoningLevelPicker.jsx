@@ -7,52 +7,45 @@ import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LEVELS = [
-  { value: 'low', label: 'Quick', color: 'text-green-500', description: 'Fast responses' },
-  { value: 'medium', label: 'Balanced', color: 'text-yellow-500', description: 'Default thinking' },
-  { value: 'high', label: 'Deep', color: 'text-red-500', description: 'Maximum reasoning' },
+  { value: 'low', label: 'No Thinking', color: 'text-green-500', description: 'Thinking disabled' },
+  { value: 'medium', label: 'Think', color: 'text-yellow-500', description: 'Standard thinking' },
+  { value: 'high', label: 'Think+', color: 'text-red-500', description: 'Extended thinking' },
 ];
 
 // Cache model capability results so we don't hit the API repeatedly
 const capabilityCache = new Map();
 
 async function checkModelThinking(modelName) {
-  if (!modelName) return true;
+  if (!modelName) return false;
   if (capabilityCache.has(modelName)) return capabilityCache.get(modelName);
 
   try {
     const res = await fetch(`/api/models?name=${encodeURIComponent(modelName)}`);
     if (res.ok) {
       const data = await res.json();
-      const supports = data.supportsThinking ?? true;
+      const supports = data.supportsThinking ?? false;
       capabilityCache.set(modelName, supports);
       return supports;
     }
   } catch {
-    // If API fails, default to showing the picker
+    // If API fails, don't show the picker — we can't verify support
   }
-  capabilityCache.set(modelName, true);
-  return true;
+  capabilityCache.set(modelName, false);
+  return false;
 }
 
 export function ReasoningLevelPicker({ value, onChange, modelName }) {
-  const [supported, setSupported] = useState(true);
-  const [checked, setChecked] = useState(false);
+  const [supported, setSupported] = useState(null);
 
   useEffect(() => {
-    if (!modelName) {
-      setSupported(true);
-      setChecked(true);
-      return;
-    }
+    setSupported(null);
     checkModelThinking(modelName).then(result => {
       setSupported(result);
-      setChecked(true);
     });
   }, [modelName]);
 
-  // Don't render anything until we've checked (prevents flash)
-  if (!checked) return null;
-  if (!supported) return null;
+  // Don't render until we've checked, and don't render if unsupported
+  if (supported !== true) return null;
 
   const current = LEVELS.find((l) => l.value === value) || LEVELS[1];
 

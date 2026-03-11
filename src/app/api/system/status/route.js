@@ -1,5 +1,6 @@
 import { success, error } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
+import { resolveOllamaUrl } from '@/lib/llm/urls';
 import { execSync } from 'child_process';
 import fs from 'fs';
 
@@ -7,7 +8,7 @@ const APP_START_TIME = Date.now();
 
 export async function GET() {
   try {
-    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+    const ollamaUrl = resolveOllamaUrl();
 
     // Ollama status
     let ollama = { connected: false, loaded_models: [], total_vram_used_mb: 0 };

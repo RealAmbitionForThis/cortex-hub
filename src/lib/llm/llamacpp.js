@@ -1,4 +1,8 @@
-const LLAMACPP_URL = process.env.LLAMACPP_URL || 'http://localhost:8080';
+import { resolveLlamacppUrl, resolveEmbeddingUrl } from './urls';
+
+function LLAMACPP_URL() {
+  return resolveLlamacppUrl();
+}
 
 export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think }) {
   const body = {
@@ -55,7 +59,7 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
     body.reasoning_budget = 0;
   }
 
-  const res = await fetch(`${LLAMACPP_URL}/v1/chat/completions`, {
+  const res = await fetch(`${LLAMACPP_URL()}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -79,7 +83,7 @@ export async function generateCompletion({ model, prompt, stream = false, images
     stream,
   };
 
-  const res = await fetch(`${LLAMACPP_URL}/v1/completions`, {
+  const res = await fetch(`${LLAMACPP_URL()}/v1/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -96,7 +100,7 @@ export async function generateEmbedding(text, model) {
 
   // Try llama-server /v1/embeddings first (requires --embedding flag)
   try {
-    const res = await fetch(`${LLAMACPP_URL}/v1/embeddings`, {
+    const res = await fetch(`${LLAMACPP_URL()}/v1/embeddings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: embeddingModel, input: text }),
@@ -110,8 +114,8 @@ export async function generateEmbedding(text, model) {
     // llama-server embeddings not available, try fallback
   }
 
-  // Fallback to CORTEX_EMBEDDING_URL if configured
-  const fallbackUrl = process.env.CORTEX_EMBEDDING_URL;
+  // Fallback to embedding URL from DB settings or CORTEX_EMBEDDING_URL env var
+  const fallbackUrl = resolveEmbeddingUrl();
   if (fallbackUrl) {
     const res = await fetch(`${fallbackUrl}/v1/embeddings`, {
       method: 'POST',
@@ -132,7 +136,7 @@ export async function generateEmbedding(text, model) {
 }
 
 export async function listModels() {
-  const res = await fetch(`${LLAMACPP_URL}/v1/models`);
+  const res = await fetch(`${LLAMACPP_URL()}/v1/models`);
   if (!res.ok) throw new Error(`llama.cpp list models error: ${res.status}`);
   const data = await res.json();
   return (data.data || []).map((m) => ({
@@ -151,7 +155,7 @@ export async function showModel(modelName) {
 
 export async function checkConnection() {
   try {
-    const res = await fetch(`${LLAMACPP_URL}/v1/models`);
+    const res = await fetch(`${LLAMACPP_URL()}/v1/models`);
     return res.ok;
   } catch {
     return false;

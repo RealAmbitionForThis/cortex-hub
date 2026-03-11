@@ -1,10 +1,9 @@
 import { success, error } from '@/lib/api/response';
-
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+import { resolveOllamaUrl } from '@/lib/llm/urls';
 
 export async function GET() {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/ps`, { cache: 'no-store' });
+    const res = await fetch(`${resolveOllamaUrl()}/api/ps`, { cache: 'no-store' });
     if (!res.ok) {
       return error(`Ollama returned ${res.status}`, res.status);
     }

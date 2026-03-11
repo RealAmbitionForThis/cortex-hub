@@ -17,15 +17,26 @@ export async function GET(request) {
       const modelfile = (info.modelfile || '').toLowerCase();
       const parameters = info.parameters || {};
 
-      const supportsThinking =
+      const nameLower = (info.name || name || '').toLowerCase();
+
+      // Check template/modelfile for thinking tags (Ollama models have rich info)
+      const hasThinkingTemplate =
         template.includes('<think') ||
         template.includes('</think') ||
         template.includes('<reasoning') ||
         template.includes('think_') ||
-        modelfile.includes('think') ||
-        modelfile.includes('reason') ||
-        (info.details?.family || '').toLowerCase().includes('deepseek') ||
-        (info.details?.family || '').toLowerCase().includes('qwen');
+        modelfile.includes('think');
+
+      // Check model name for known thinking-capable model families
+      // Be specific — not all qwen/deepseek models support dynamic thinking
+      const hasThinkingName =
+        nameLower.includes('qwq') ||
+        nameLower.includes('qwen3') ||
+        nameLower.includes('deepseek-r1') ||
+        nameLower.includes('deepseek-reasoner') ||
+        nameLower.includes('think');
+
+      const supportsThinking = hasThinkingTemplate || hasThinkingName;
 
       return success({
         name: info.name || name,
