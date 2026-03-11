@@ -18,13 +18,23 @@ function findBinary() {
   const isWindows = process.platform === 'win32';
   const home = process.env.HOME || process.env.USERPROFILE || '';
 
-  // Check DB setting first
+  // Check DB setting first — trust user-configured path
   try {
     const db = getDb();
     const row = db.prepare("SELECT value FROM settings WHERE key = 'llamacpp_binary_path'").get();
     if (row) {
-      const val = JSON.parse(row.value);
-      if (val && fs.existsSync(val)) return val;
+      let val = JSON.parse(row.value);
+      if (val && typeof val === 'string') {
+        val = val.trim();
+        // Normalize path separators for the current platform
+        if (isWindows) {
+          val = val.replace(/\//g, '\\');
+        }
+        if (fs.existsSync(val)) return val;
+        // If existsSync fails, still return the path — the user set it explicitly,
+        // let spawn() attempt it and surface a real error instead of "not found"
+        return val;
+      }
     }
   } catch { /* fall through */ }
 
