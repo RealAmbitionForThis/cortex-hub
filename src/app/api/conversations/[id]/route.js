@@ -1,5 +1,5 @@
 import { success, error, notFound } from '@/lib/api/response';
-import { getDb } from '@/lib/db';
+import { getDb, updateRow } from '@/lib/db';
 
 const ALLOWED_FIELDS = ['title', 'pinned', 'model', 'project_id', 'system_prompt_override'];
 
@@ -27,21 +27,7 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     const body = await request.json();
 
-    const sets = [];
-    const values = [];
-
-    for (const [key, val] of Object.entries(body)) {
-      if (ALLOWED_FIELDS.includes(key)) {
-        sets.push(`${key} = ?`);
-        values.push(val);
-      }
-    }
-
-    if (sets.length > 0) {
-      sets.push('updated_at = datetime(\'now\')');
-      values.push(id);
-      db.prepare(`UPDATE conversations SET ${sets.join(', ')} WHERE id = ?`).run(...values);
-    }
+    updateRow('conversations', id, body, ALLOWED_FIELDS);
 
     return success();
   } catch (err) {

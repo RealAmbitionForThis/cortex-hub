@@ -2,7 +2,7 @@ import { getDb } from '@/lib/db';
 import { generateEmbedding } from '@/lib/llm/provider';
 import { cosineSimilarity, vectorToBuffer, bufferToVector } from '@/lib/memory/embeddings';
 import { chunkText } from './parser';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function indexDocument(documentId, text) {
   const db = getDb();
@@ -11,7 +11,7 @@ export async function indexDocument(documentId, text) {
   for (let i = 0; i < chunks.length; i++) {
     try {
       const embedding = await generateEmbedding(chunks[i]);
-      const id = uuid();
+      const id = uuidv4();
       db.prepare(`
         INSERT INTO document_chunks (id, document_id, chunk_index, content, embedding)
         VALUES (?, ?, ?, ?, ?)

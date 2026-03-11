@@ -1,9 +1,9 @@
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 export function logExport({ filename, format, module: mod, row_count }) {
   const db = getDb();
-  const id = uuid();
+  const id = uuidv4();
   db.prepare(`
     INSERT INTO exports (id, filename, format, module, row_count, created_at)
     VALUES (?, ?, ?, ?, ?, ?)

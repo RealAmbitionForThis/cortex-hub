@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db';
+import { getDb, updateRow } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 export function addTask({ title, description, priority, due_date, module: taskModule, tags }) {
@@ -24,18 +24,7 @@ export function completeTask(taskId) {
 }
 
 export function updateTask(taskId, updates) {
-  const ALLOWED = ['title', 'description', 'priority', 'status', 'module', 'due_date', 'tags'];
-  const fields = [];
-  const values = [];
-  for (const [key, value] of Object.entries(updates)) {
-    if (!ALLOWED.includes(key)) continue;
-    fields.push(`${key} = ?`);
-    values.push(typeof value === 'object' ? JSON.stringify(value) : value);
-  }
-  if (fields.length === 0) return;
-  fields.push('updated_at = datetime(\'now\')');
-  values.push(taskId);
-  getDb().prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  updateRow('tasks', taskId, updates, ['title', 'description', 'priority', 'status', 'module', 'due_date', 'tags'], { serialize: ['tags'] });
 }
 
 export function getBacklog() {

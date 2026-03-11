@@ -1,6 +1,6 @@
 import { success, error, badRequest, notFound } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { applyParameters } from '@/lib/comfyui/workflow-manager';
 import { queueWorkflow } from '@/lib/comfyui/client';
 
@@ -17,11 +17,11 @@ export async function POST(request) {
     try { workflowJson = JSON.parse(workflow.workflow_json); } catch (e) { return error('Invalid workflow JSON: ' + e.message); }
     const modifiedWorkflow = applyParameters(workflowJson, body.params || []);
 
-    const clientId = uuid();
+    const clientId = uuidv4();
     const result = await queueWorkflow(modifiedWorkflow, clientId);
     const promptId = result?.prompt_id;
 
-    const generationId = uuid();
+    const generationId = uuidv4();
     db.prepare(`
       INSERT INTO comfyui_generations (id, workflow_id, prompt_id, input_params, status)
       VALUES (?, ?, ?, ?, 'queued')

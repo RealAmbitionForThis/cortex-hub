@@ -26,7 +26,7 @@ export async function POST(request) {
       return success({ id });
     }
     if (body.type === 'workout') {
-      if (!body.type) return badRequest('Workout type required');
+      if (!body.exercises && !body.duration_minutes) return badRequest('Exercises or duration required');
       const id = logWorkout(body);
       return success({ id });
     }

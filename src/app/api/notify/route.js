@@ -1,7 +1,7 @@
 import { success, error } from '@/lib/api/response';
 import { sendNotification } from '@/lib/notify/ntfy';
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function GET() {
   try {
@@ -38,7 +38,7 @@ export async function POST(request) {
     db.prepare(`
       INSERT INTO notifications (id, title, message, type, read, created_at)
       VALUES (?, ?, ?, ?, 0, ?)
-    `).run(uuid(), body.title || 'Notification', body.message, body.type || 'info', new Date().toISOString());
+    `).run(uuidv4(), body.title || 'Notification', body.message, body.type || 'info', new Date().toISOString());
 
     return success(result);
   } catch (err) {

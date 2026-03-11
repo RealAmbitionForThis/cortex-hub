@@ -1,6 +1,6 @@
 import { success, error, badRequest } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(request, { params }) {
   try {
@@ -28,7 +28,7 @@ export async function POST(request, { params }) {
 
     db.prepare(
       'INSERT OR IGNORE INTO project_documents (id, project_id, document_id) VALUES (?, ?, ?)'
-    ).run(uuid(), projectId, document_id);
+    ).run(uuidv4(), projectId, document_id);
 
     return success();
   } catch (err) {

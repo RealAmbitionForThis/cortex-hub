@@ -1,10 +1,10 @@
-import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { getDb, updateRow } from '@/lib/db';
+import { v4 as uuidv4 } from 'uuid';
 import { parseTags } from '@/lib/utils/format';
 
 export function addContact({ name, email, phone, company, role, notes, birthday, tags }) {
   const db = getDb();
-  const id = uuid();
+  const id = uuidv4();
   const now = new Date().toISOString();
   db.prepare(`
     INSERT INTO contacts (id, name, email, phone, company, role, notes, birthday, tags, created_at, updated_at)
@@ -37,25 +37,7 @@ export function getContactById(id) {
 }
 
 export function updateContact(id, updates) {
-  const db = getDb();
-  const ALLOWED = ['name', 'email', 'phone', 'company', 'role', 'notes', 'birthday', 'tags'];
-  const fields = [];
-  const params = [];
-  for (const [key, value] of Object.entries(updates)) {
-    if (!ALLOWED.includes(key)) continue;
-    if (key === 'tags') {
-      fields.push('tags = ?');
-      params.push(JSON.stringify(value));
-    } else {
-      fields.push(`${key} = ?`);
-      params.push(value);
-    }
-  }
-  if (fields.length === 0) return;
-  fields.push('updated_at = ?');
-  params.push(new Date().toISOString());
-  params.push(id);
-  db.prepare(`UPDATE contacts SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+  updateRow('contacts', id, updates, ['name', 'email', 'phone', 'company', 'role', 'notes', 'birthday', 'tags'], { serialize: ['tags'] });
 }
 
 export function deleteContact(id) {
@@ -66,7 +48,7 @@ export function deleteContact(id) {
 
 export function addInteraction({ contact_id, type, notes, date }) {
   const db = getDb();
-  const id = uuid();
+  const id = uuidv4();
   db.prepare(`
     INSERT INTO contact_interactions (id, contact_id, type, notes, date)
     VALUES (?, ?, ?, ?, ?)

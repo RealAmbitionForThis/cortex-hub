@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db';
+import { getDb, updateRow } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { getMonthRange } from '@/lib/utils/date';
 
@@ -16,7 +16,7 @@ export function getTransactions({ period, category, limit } = {}) {
   const params = [];
 
   if (period) {
-    const { start, end } = getMonthRange();
+    const { start, end } = getMonthRange(period instanceof Date ? period : new Date());
     query += ' AND date >= ? AND date <= ?';
     params.push(start, end);
   }
@@ -114,13 +114,7 @@ export function getSubscriptionTotal() {
 }
 
 export function updateSubscriptionUsage(id, usage_rating, last_used) {
-  const sets = [];
-  const vals = [];
-  if (usage_rating !== undefined) { sets.push('usage_rating = ?'); vals.push(usage_rating); }
-  if (last_used) { sets.push('last_used = ?'); vals.push(last_used); }
-  if (sets.length === 0) return;
-  vals.push(id);
-  getDb().prepare(`UPDATE bills SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+  updateRow('bills', id, { usage_rating, last_used }, ['usage_rating', 'last_used'], { addTimestamp: false });
 }
 
 export function deleteSubscription(id) {
@@ -130,15 +124,7 @@ export function deleteSubscription(id) {
 // --- Transaction CRUD ---
 
 export function updateTransaction(id, { amount, category, description, date }) {
-  const sets = [];
-  const vals = [];
-  if (amount !== undefined) { sets.push('amount = ?'); vals.push(amount); }
-  if (category !== undefined) { sets.push('category = ?'); vals.push(category); }
-  if (description !== undefined) { sets.push('description = ?'); vals.push(description); }
-  if (date !== undefined) { sets.push('date = ?'); vals.push(date); }
-  if (sets.length === 0) return;
-  vals.push(id);
-  getDb().prepare(`UPDATE transactions SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+  updateRow('transactions', id, { amount, category, description, date }, ['amount', 'category', 'description', 'date'], { addTimestamp: false });
 }
 
 export function deleteTransaction(id) {
@@ -148,16 +134,7 @@ export function deleteTransaction(id) {
 // --- Bill CRUD ---
 
 export function updateBill(id, { name, amount, frequency, due_day, category }) {
-  const sets = [];
-  const vals = [];
-  if (name !== undefined) { sets.push('name = ?'); vals.push(name); }
-  if (amount !== undefined) { sets.push('amount = ?'); vals.push(amount); }
-  if (frequency !== undefined) { sets.push('frequency = ?'); vals.push(frequency); }
-  if (due_day !== undefined) { sets.push('due_day = ?'); vals.push(due_day); }
-  if (category !== undefined) { sets.push('category = ?'); vals.push(category); }
-  if (sets.length === 0) return;
-  vals.push(id);
-  getDb().prepare(`UPDATE bills SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+  updateRow('bills', id, { name, amount, frequency, due_day, category }, ['name', 'amount', 'frequency', 'due_day', 'category'], { addTimestamp: false });
 }
 
 export function deleteBill(id) {

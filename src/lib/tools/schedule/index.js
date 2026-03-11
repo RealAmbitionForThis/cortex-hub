@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { scheduleJob, stopJob } from '@/lib/scheduler/cron';
 
 export const scheduleTools = [
@@ -18,7 +18,7 @@ export const scheduleTools = [
     },
     handler: async ({ name, cron_expression, action, params }) => {
       const db = getDb();
-      const id = uuid();
+      const id = uuidv4();
       db.prepare(`
         INSERT INTO schedules (id, name, cron_expression, action, params, enabled, created_at)
         VALUES (?, ?, ?, ?, ?, 1, ?)

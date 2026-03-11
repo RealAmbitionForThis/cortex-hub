@@ -1,6 +1,6 @@
 import { success, error, badRequest } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { scheduleJob, stopJob } from '@/lib/scheduler/cron';
 
 export async function GET() {
@@ -36,7 +36,7 @@ export async function POST(request) {
     }
 
     const db = getDb();
-    const id = uuid();
+    const id = uuidv4();
     const params = JSON.stringify({
       project_id: body.project_id || null,
       tools: body.tools || [],

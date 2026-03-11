@@ -1,6 +1,6 @@
 import { success, error, badRequest } from '@/lib/api/response';
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { extractParameters } from '@/lib/comfyui/workflow-manager';
 import { parseWorkflow } from '@/lib/comfyui/parse';
 
@@ -31,7 +31,7 @@ export async function POST(request) {
     }
 
     const parameters = extractParameters(workflowJson);
-    const id = uuid();
+    const id = uuidv4();
     const db = getDb();
 
     db.prepare(`

@@ -1,7 +1,7 @@
 import { success, error, badRequest } from '@/lib/api/response';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
@@ -23,7 +23,7 @@ export async function POST(request) {
 
       const buffer = Buffer.from(await file.arrayBuffer());
       const ext = path.extname(file.name);
-      const filename = `${uuid()}${ext}`;
+      const filename = `${uuidv4()}${ext}`;
       const filePath = path.join(targetDir, filename);
 
       await writeFile(filePath, buffer);

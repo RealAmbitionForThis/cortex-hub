@@ -1,4 +1,4 @@
-import { success, error, badRequest } from '@/lib/api/response';
+import { success, error, badRequest, notFound } from '@/lib/api/response';
 import { addInventoryItem, getInventoryItems, getInventoryItem, updateInventoryItem, deleteInventoryItem, getExpiringWarranties, getInventoryStats, addWarrantyClaim, getWarrantyClaims, updateWarrantyClaim } from '@/lib/tools/inventory/queries';
 
 export async function GET(request) {
@@ -22,7 +22,7 @@ export async function GET(request) {
 
     if (id) {
       const item = getInventoryItem(id);
-      if (!item) return error('Item not found', 404);
+      if (!item) return notFound('Item not found');
       const claims = getWarrantyClaims(id);
       return success({ item, claims });
     }

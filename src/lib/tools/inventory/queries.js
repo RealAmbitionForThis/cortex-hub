@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db';
+import { getDb, updateRow } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Inventory Items ---
@@ -27,18 +27,7 @@ export function getInventoryItem(id) {
 }
 
 export function updateInventoryItem(id, updates) {
-  const allowed = ['name', 'manufacturer', 'model', 'serial_number', 'purchase_date', 'purchase_price', 'warranty_expiry', 'warranty_type', 'warranty_provider', 'coverage_details', 'receipt_document_id', 'category', 'location', 'notes', 'status'];
-  const sets = [];
-  const vals = [];
-  for (const [key, val] of Object.entries(updates)) {
-    if (allowed.includes(key) && val !== undefined) {
-      sets.push(`${key} = ?`);
-      vals.push(val);
-    }
-  }
-  if (sets.length === 0) return;
-  vals.push(id);
-  getDb().prepare(`UPDATE inventory_items SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+  updateRow('inventory_items', id, updates, ['name', 'manufacturer', 'model', 'serial_number', 'purchase_date', 'purchase_price', 'warranty_expiry', 'warranty_type', 'warranty_provider', 'coverage_details', 'receipt_document_id', 'category', 'location', 'notes', 'status'], { addTimestamp: false });
 }
 
 export function deleteInventoryItem(id) {
@@ -93,16 +82,5 @@ export function getWarrantyClaims(inventory_item_id) {
 }
 
 export function updateWarrantyClaim(id, updates) {
-  const allowed = ['description', 'status', 'resolution', 'cost', 'notes'];
-  const sets = [];
-  const vals = [];
-  for (const [key, val] of Object.entries(updates)) {
-    if (allowed.includes(key) && val !== undefined) {
-      sets.push(`${key} = ?`);
-      vals.push(val);
-    }
-  }
-  if (sets.length === 0) return;
-  vals.push(id);
-  getDb().prepare(`UPDATE warranty_claims SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+  updateRow('warranty_claims', id, updates, ['description', 'status', 'resolution', 'cost', 'notes'], { addTimestamp: false });
 }

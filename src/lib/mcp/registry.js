@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { v4 as uuid } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { parseJsonSafe } from '@/lib/utils/format';
 
 export function getMcpServers() {
@@ -13,7 +13,7 @@ export function getMcpServers() {
 
 export function addMcpServer({ name, url, description, config }) {
   const db = getDb();
-  const id = uuid();
+  const id = uuidv4();
   db.prepare(`
     INSERT INTO mcp_servers (id, name, url, description, enabled, config, created_at)
     VALUES (?, ?, ?, ?, 1, ?, ?)
