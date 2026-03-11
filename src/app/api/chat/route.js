@@ -214,8 +214,15 @@ export async function POST(request) {
 
 async function streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions }) {
   try {
-    // Map reasoning level to Ollama think parameter
-    const thinkParam = reasoningLevel === 'high' ? true : reasoningLevel === 'low' ? false : true;
+    // Map reasoning level to the think parameter.
+    // gpt-oss models use string values ("low"/"medium"/"high"), everything else uses boolean.
+    const isGptOss = (mainModel || '').toLowerCase().includes('gpt-oss');
+    let thinkParam;
+    if (isGptOss) {
+      thinkParam = reasoningLevel || 'medium';
+    } else {
+      thinkParam = reasoningLevel === 'low' ? false : true;
+    }
     const res = await chatCompletion({ model: mainModel, messages, tools, stream: true, options: ollamaOptions, think: thinkParam });
     let fullContent = '';
     let thinkingContent = '';

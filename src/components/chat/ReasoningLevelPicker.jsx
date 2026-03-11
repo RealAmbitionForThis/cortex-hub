@@ -1,59 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LEVELS = [
-  { value: 'low', label: 'Quick', color: 'text-green-500', description: 'Fast responses' },
-  { value: 'medium', label: 'Balanced', color: 'text-yellow-500', description: 'Default thinking' },
-  { value: 'high', label: 'Deep', color: 'text-red-500', description: 'Maximum reasoning' },
+  { value: 'low', label: 'No Thinking', color: 'text-green-500', description: 'Thinking disabled' },
+  { value: 'medium', label: 'Think', color: 'text-yellow-500', description: 'Standard thinking' },
+  { value: 'high', label: 'Think+', color: 'text-red-500', description: 'Extended thinking' },
 ];
 
-// Cache model capability results so we don't hit the API repeatedly
-const capabilityCache = new Map();
-
-async function checkModelThinking(modelName) {
-  if (!modelName) return true;
-  if (capabilityCache.has(modelName)) return capabilityCache.get(modelName);
-
-  try {
-    const res = await fetch(`/api/models?name=${encodeURIComponent(modelName)}`);
-    if (res.ok) {
-      const data = await res.json();
-      const supports = data.supportsThinking ?? true;
-      capabilityCache.set(modelName, supports);
-      return supports;
-    }
-  } catch {
-    // If API fails, default to showing the picker
-  }
-  capabilityCache.set(modelName, true);
-  return true;
-}
-
-export function ReasoningLevelPicker({ value, onChange, modelName }) {
-  const [supported, setSupported] = useState(true);
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    if (!modelName) {
-      setSupported(true);
-      setChecked(true);
-      return;
-    }
-    checkModelThinking(modelName).then(result => {
-      setSupported(result);
-      setChecked(true);
-    });
-  }, [modelName]);
-
-  // Don't render anything until we've checked (prevents flash)
-  if (!checked) return null;
-  if (!supported) return null;
-
+export function ReasoningLevelPicker({ value, onChange }) {
   const current = LEVELS.find((l) => l.value === value) || LEVELS[1];
 
   return (

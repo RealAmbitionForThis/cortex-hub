@@ -1,4 +1,4 @@
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+import { resolveOllamaUrl as getOllamaUrl } from './urls';
 
 export async function chatCompletion({ model, messages, tools, stream = false, options = {}, think }) {
   // keep_alive is a top-level Ollama param, not inside options
@@ -10,7 +10,7 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   // Enable Ollama's native thinking support — returns thinking in message.thinking field
   if (think !== undefined) body.think = think;
 
-  const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+  const res = await fetch(`${getOllamaUrl()}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -26,7 +26,7 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
 export async function generateEmbedding(text, model) {
   const embeddingModel = model || process.env.CORTEX_DEFAULT_EMBEDDING_MODEL || 'nomic-embed-text';
 
-  const res = await fetch(`${OLLAMA_URL}/api/embed`, {
+  const res = await fetch(`${getOllamaUrl()}/api/embed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: embeddingModel, input: text }),
@@ -41,14 +41,14 @@ export async function generateEmbedding(text, model) {
 }
 
 export async function listModels() {
-  const res = await fetch(`${OLLAMA_URL}/api/tags`);
+  const res = await fetch(`${getOllamaUrl()}/api/tags`);
   if (!res.ok) throw new Error(`List models error: ${res.status}`);
   const data = await res.json();
   return data.models || [];
 }
 
 export async function showModel(modelName) {
-  const res = await fetch(`${OLLAMA_URL}/api/show`, {
+  const res = await fetch(`${getOllamaUrl()}/api/show`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: modelName }),
@@ -59,7 +59,7 @@ export async function showModel(modelName) {
 
 export async function checkConnection() {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`);
+    const res = await fetch(`${getOllamaUrl()}/api/tags`);
     return res.ok;
   } catch {
     return false;
@@ -70,7 +70,7 @@ export async function generateCompletion({ model, prompt, stream = false, images
   const body = { model: model || process.env.CORTEX_DEFAULT_MAIN_MODEL || 'llama3', prompt, stream };
   if (images) body.images = images;
 
-  const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+  const res = await fetch(`${getOllamaUrl()}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

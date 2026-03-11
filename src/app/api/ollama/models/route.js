@@ -1,10 +1,9 @@
 import { success, error, badRequest } from '@/lib/api/response';
-
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+import { resolveOllamaUrl } from '@/lib/llm/urls';
 
 export async function GET() {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`, { cache: 'no-store' });
+    const res = await fetch(`${resolveOllamaUrl()}/api/tags`, { cache: 'no-store' });
     if (!res.ok) {
       return error(`Ollama returned ${res.status}`, res.status);
     }
@@ -29,7 +28,7 @@ export async function POST(request) {
     const body = await request.json();
     if (!body.name) return badRequest('Model name is required');
 
-    const res = await fetch(`${OLLAMA_URL}/api/pull`, {
+    const res = await fetch(`${resolveOllamaUrl()}/api/pull`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: body.name }),
@@ -112,7 +111,7 @@ export async function DELETE(request) {
     const body = await request.json();
     if (!body.name) return badRequest('Model name is required');
 
-    const res = await fetch(`${OLLAMA_URL}/api/delete`, {
+    const res = await fetch(`${resolveOllamaUrl()}/api/delete`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: body.name }),

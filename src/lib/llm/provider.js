@@ -1,9 +1,13 @@
 import * as ollama from './client';
 import * as llamacpp from './llamacpp';
+import { resolveBackend, resolveOllamaUrl, resolveLlamacppUrl } from './urls';
 
 export function getBackend() {
-  return (process.env.CORTEX_BACKEND || 'ollama').toLowerCase();
+  return resolveBackend();
 }
+
+// Re-export URL resolvers for use by API routes
+export { resolveOllamaUrl, resolveLlamacppUrl };
 
 function getClient() {
   return getBackend() === 'llamacpp' ? llamacpp : ollama;
