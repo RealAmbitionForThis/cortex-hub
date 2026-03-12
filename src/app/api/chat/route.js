@@ -320,6 +320,8 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
       eval_duration_ms: initialStats?.eval_duration_ms || 0,
       total_duration_ms: initialStats?.total_duration_ms || 0,
       tokens_per_second: initialStats?.tokens_per_second || 0,
+      _tps_sum: initialStats?.tokens_per_second || 0,
+      _tps_count: initialStats?.tokens_per_second ? 1 : 0,
     };
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -390,7 +392,10 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
           totalStats.eval_duration_ms += chunk.eval_duration ? Math.round(chunk.eval_duration / 1e6) : 0;
           totalStats.total_duration_ms += chunk.total_duration ? Math.round(chunk.total_duration / 1e6) : 0;
           if (chunk.eval_count && chunk.eval_duration) {
-            totalStats.tokens_per_second = Math.round((chunk.eval_count / (chunk.eval_duration / 1e9)) * 10) / 10;
+            const roundTps = Math.round((chunk.eval_count / (chunk.eval_duration / 1e9)) * 10) / 10;
+            totalStats._tps_sum += roundTps;
+            totalStats._tps_count += 1;
+            totalStats.tokens_per_second = Math.round((totalStats._tps_sum / totalStats._tps_count) * 10) / 10;
           }
           break;
         }

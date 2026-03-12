@@ -72,6 +72,7 @@ async function processExtracted(extracted, sourceMessageId) {
     preferences: 'preference',
     events: 'event',
     reminders: 'reminder',
+    updates: 'update',
   };
 
   for (const [key, category] of Object.entries(categoryMap)) {

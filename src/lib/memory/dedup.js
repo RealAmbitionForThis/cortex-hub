@@ -4,7 +4,7 @@ import { MEMORY_SIMILARITY_THRESHOLD } from '@/lib/constants';
 
 export function findSimilarMemory(embedding, threshold) {
   const db = getDb();
-  const memories = db.prepare('SELECT * FROM memories WHERE embedding IS NOT NULL').all();
+  const memories = db.prepare('SELECT * FROM memories WHERE embedding IS NOT NULL ORDER BY updated_at DESC LIMIT 500').all();
   const cutoff = threshold || MEMORY_SIMILARITY_THRESHOLD;
 
   for (const memory of memories) {
