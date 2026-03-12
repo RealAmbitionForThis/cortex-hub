@@ -1,6 +1,40 @@
 import { success, badRequest, withHandler } from '@/lib/api/response';
+import { getDb } from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
+
+// Allowed base directories for browsing. Restricts file system access to
+// user-configured models directory and common safe default locations.
+function getAllowedBaseDirs() {
+  const dirs = [];
+
+  // Check DB setting for user-configured models directory
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'llamacpp_models_dir'").get();
+    if (row) {
+      const val = JSON.parse(row.value);
+      if (val && typeof val === 'string') dirs.push(path.resolve(val));
+    }
+  } catch { /* no setting */ }
+
+  // Common default locations
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  if (home) {
+    dirs.push(path.resolve(home, 'models'));
+    dirs.push(path.resolve(home, '.cache', 'huggingface'));
+    dirs.push(path.resolve(home, 'llama.cpp', 'models'));
+    // If no explicit models dir configured, allow home as fallback
+    if (dirs.length <= 3) dirs.push(path.resolve(home));
+  }
+
+  return dirs;
+}
+
+function isPathAllowed(absPath) {
+  const allowed = getAllowedBaseDirs();
+  return allowed.some(base => absPath === base || absPath.startsWith(base + path.sep));
+}
 
 export const GET = withHandler(async (request) => {
   const { searchParams } = new URL(request.url);
@@ -11,7 +45,7 @@ export const GET = withHandler(async (request) => {
   if (searchDir && query) {
     // Recursive GGUF search
     const absPath = path.resolve(searchDir);
-    if (absPath.includes('..')) return badRequest('Invalid path');
+    if (!isPathAllowed(absPath)) return badRequest('Path is outside allowed directories');
     if (!fs.existsSync(absPath)) return badRequest('Directory not found');
 
     const results = [];
@@ -22,8 +56,8 @@ export const GET = withHandler(async (request) => {
   if (!dirPath) return badRequest('path parameter required');
 
   const absPath = path.resolve(dirPath);
-  if (!path.isAbsolute(absPath) || absPath.includes('..')) {
-    return badRequest('Invalid path');
+  if (!isPathAllowed(absPath)) {
+    return badRequest('Path is outside allowed directories');
   }
 
   if (!fs.existsSync(absPath)) {

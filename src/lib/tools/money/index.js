@@ -21,7 +21,13 @@ export const moneyTools = [
     name: 'money.get_spending',
     description: 'Get spending breakdown by category',
     parameters: { type: 'object', properties: { period: { type: 'string' }, category: { type: 'string' } } },
-    handler: ({ period, category }) => ({ spending: getSpendingByCategory(period) }),
+    handler: ({ period, category }) => {
+      let spending = getSpendingByCategory(period);
+      if (category) {
+        spending = spending.filter(s => s.category === category);
+      }
+      return { spending };
+    },
   },
   {
     name: 'money.set_budget',
@@ -46,12 +52,6 @@ export const moneyTools = [
     description: 'Mark a bill as paid for the current cycle',
     parameters: { type: 'object', properties: { bill_id: { type: 'string' } }, required: ['bill_id'] },
     handler: ({ bill_id }) => markBillPaid(bill_id),
-  },
-  {
-    name: 'money.import_csv',
-    description: 'Import transactions from a CSV file',
-    parameters: { type: 'object', properties: { filepath: { type: 'string' } }, required: ['filepath'] },
-    handler: () => ({ message: 'CSV import not yet configured from chat. Use the Exports page.' }),
   },
   {
     name: 'money.add_subscription',

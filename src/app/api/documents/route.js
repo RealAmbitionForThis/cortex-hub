@@ -37,7 +37,9 @@ export const POST = withHandler(async (request) => {
     }
 
     const id = addDocument({ title, type: isPdf ? 'pdf' : 'text', content });
-    indexDocument(id, content).catch(() => {});
+    indexDocument(id, content).catch((err) => {
+      console.error(`[documents] Failed to index document ${id}:`, err.message);
+    });
     return success({ id });
   }
 

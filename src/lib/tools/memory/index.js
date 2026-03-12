@@ -103,8 +103,10 @@ function handleGetDailyLog({ date }) {
 
 function handleSearchDailyLogs({ query, date_from, date_to }) {
   const db = getDb();
-  let sql = 'SELECT * FROM daily_logs WHERE summary LIKE ?';
-  const params = [`%${query}%`];
+  // Escape LIKE wildcards in user input to prevent unintended pattern matching
+  const escapedQuery = query.replace(/[%_]/g, '\\$&');
+  let sql = "SELECT * FROM daily_logs WHERE summary LIKE ? ESCAPE '\\'";
+  const params = [`%${escapedQuery}%`];
   if (date_from) { sql += ' AND date >= ?'; params.push(date_from); }
   if (date_to) { sql += ' AND date <= ?'; params.push(date_to); }
   sql += ' ORDER BY date DESC LIMIT 20';

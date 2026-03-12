@@ -26,10 +26,12 @@ Return ONLY valid JSON, nothing else.`;
 
 export async function analyzeRecentConversations() {
   const db = getDb();
-  const lastHour = new Date(Date.now() - 3600000).toISOString();
+  // Use a 5-minute window to match the analyzer's cron interval,
+  // preventing the same messages from being re-analyzed on every run.
+  const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const messages = db.prepare(
     'SELECT m.id, m.role, m.content FROM messages m WHERE m.created_at >= ? ORDER BY m.created_at'
-  ).all(lastHour);
+  ).all(since);
   if (messages.length < 2) return;
   await analyzeMessages(messages);
 }

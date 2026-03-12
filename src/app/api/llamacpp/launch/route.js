@@ -226,7 +226,16 @@ export async function POST(request) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
+        let streamClosed = false;
+
+        function closeStream() {
+          if (streamClosed) return;
+          streamClosed = true;
+          try { controller.close(); } catch { /* already closed */ }
+        }
+
         function sendEvent(data) {
+          if (streamClosed) return;
           try {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
           } catch { /* stream closed */ }
@@ -308,7 +317,7 @@ export async function POST(request) {
           addLog(`[cortex] Process error: ${err.message}`);
           sendEvent({ type: 'error', message: err.message });
           serverProcess = null;
-          controller.close();
+          closeStream();
         });
 
         child.on('exit', (code, signal) => {
@@ -316,12 +325,12 @@ export async function POST(request) {
           addLog(`[cortex] Process exited: code=${code}, signal=${signal}`);
           sendEvent({ type: 'exit', code, signal, lastLog: lastLines });
           serverProcess = null;
-          controller.close();
+          closeStream();
         });
 
         // Close stream after 30 seconds regardless — client can poll status after
         setTimeout(() => {
-          try { controller.close(); } catch { /* already closed */ }
+          closeStream();
         }, 30000);
       },
     });

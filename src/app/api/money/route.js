@@ -6,7 +6,15 @@ export const GET = withHandler(async (request) => {
   const view = searchParams.get('view');
 
   if (view === 'balance') return success(getBalance());
-  if (view === 'spending') return success({ spending: getSpendingByCategory() });
+  if (view === 'spending') {
+    const period = searchParams.get('period');
+    const category = searchParams.get('category');
+    let spending = getSpendingByCategory(period || undefined);
+    if (category) {
+      spending = spending.filter(s => s.category === category);
+    }
+    return success({ spending });
+  }
   if (view === 'budgets') return success({ budgets: getBudgets() });
 
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '100', 10), 1), 1000);
@@ -46,9 +54,8 @@ export const PUT = withHandler(async (request) => {
 });
 
 export const DELETE = withHandler(async (request) => {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-  if (!id) return badRequest('Transaction ID required');
-  deleteTransaction(id);
+  const body = await request.json();
+  if (!body.id) return badRequest('Transaction ID required');
+  deleteTransaction(body.id);
   return success();
 });
