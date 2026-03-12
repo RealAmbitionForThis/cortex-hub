@@ -8,15 +8,7 @@ export function addVehicle({ make, model, year, current_mileage, nickname }) {
 }
 
 export function getVehicles() {
-  // Deduplicate by make+model+year — keep the most recently created entry
-  return getDb().prepare(`
-    SELECT v.* FROM vehicles v
-    INNER JOIN (
-      SELECT make, model, year, MAX(created_at) as max_created
-      FROM vehicles GROUP BY make, model, year
-    ) latest ON v.make = latest.make AND v.model = latest.model AND v.year = latest.year AND v.created_at = latest.max_created
-    ORDER BY v.created_at DESC
-  `).all();
+  return getDb().prepare('SELECT * FROM vehicles ORDER BY created_at DESC').all();
 }
 
 export function logMaintenance({ vehicle_id, type, description, cost, mileage, shop, date }) {
