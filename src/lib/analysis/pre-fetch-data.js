@@ -127,7 +127,7 @@ const DATA_FETCHERS = {
   recent_maintenance(db) {
     try {
       return db.prepare(
-        'SELECT v.name as vehicle, m.type, m.description, m.cost, m.date FROM maintenance_logs m LEFT JOIN vehicles v ON m.vehicle_id = v.id ORDER BY m.date DESC LIMIT 5'
+        'SELECT COALESCE(v.nickname, v.make || ' ' || v.model) as vehicle, m.type, m.description, m.cost, m.date FROM maintenance_logs m LEFT JOIN vehicles v ON m.vehicle_id = v.id ORDER BY m.date DESC LIMIT 5'
       ).all();
     } catch {
       return [];

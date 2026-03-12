@@ -23,7 +23,7 @@ export async function verifyPassword(password, hash) {
 }
 
 export async function createToken() {
-  const secret = getSecret();
+  const secret = getJwtSecret();
   return new SignJWT({ role: 'admin' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
