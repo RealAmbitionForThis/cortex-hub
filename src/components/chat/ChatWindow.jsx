@@ -120,7 +120,7 @@ export function ChatWindow({ messages, streaming, onSend, onStop, onEdit, onDele
       </div>
 
       {/* Analyzer Panel — dedicated region above messages */}
-      {extraAnalyze && <AnalyzerPanel analysisState={analysisState} isStreaming={streaming} />}
+      {extraAnalyze && <AnalyzerPanel analysisState={analysisState} />}
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
         {messages.length === 0 ? (

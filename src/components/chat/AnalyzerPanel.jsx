@@ -1,166 +1,149 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronUp, ChevronDown, BrainCircuit, Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, BrainCircuit, Loader2, AlertCircle, Check, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const COLLAPSE_DELAY_MS = 5000;
-
 /**
- * Dedicated panel that sits ABOVE the chat messages scroll area.
- * Shows the pre-analysis results: intent, modules, confidence, etc.
+ * Analyzer panel — sits above chat messages.
  *
  * States:
- *  - hidden: extra-analyze off or no analysis yet
- *  - analyzing: loading shimmer
- *  - complete: expanded with results
- *  - collapsed: single-line summary
+ *  - idle: hidden
+ *  - streaming: live thinking + content from the analysis LLM call
+ *  - complete: structured results + toggleable raw output
+ *  - failed: error message, persists until next analysis
  */
-export function AnalyzerPanel({ analysisState, isStreaming }) {
-  // analysisState: { status: 'idle' | 'analyzing' | 'complete', data: null | AnalysisResult }
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('analyzer_panel_collapsed') === 'true';
-    }
-    return false;
-  });
-  const autoCollapseRef = useRef(null);
+export function AnalyzerPanel({ analysisState }) {
+  const [showRaw, setShowRaw] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const streamRef = useRef(null);
 
-  // Save collapse preference
+  // Auto-scroll the streaming area
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('analyzer_panel_collapsed', String(isCollapsed));
+    if (streamRef.current) {
+      streamRef.current.scrollTop = streamRef.current.scrollHeight;
     }
-  }, [isCollapsed]);
+  }, [analysisState?.thinking, analysisState?.content]);
 
-  // Auto-collapse 5 seconds after main response starts streaming
+  // Expand when new analysis starts or completes
   useEffect(() => {
-    if (isStreaming && analysisState?.status === 'complete') {
-      autoCollapseRef.current = setTimeout(() => {
-        setIsCollapsed(true);
-      }, COLLAPSE_DELAY_MS);
-    }
-    return () => {
-      if (autoCollapseRef.current) clearTimeout(autoCollapseRef.current);
-    };
-  }, [isStreaming, analysisState?.status]);
-
-  // Expand when new analysis arrives
-  useEffect(() => {
-    if (analysisState?.status === 'complete') {
+    if (analysisState?.status === 'streaming' || analysisState?.status === 'complete') {
       setIsCollapsed(false);
     }
-  }, [analysisState?.status, analysisState?.data]);
+  }, [analysisState?.status]);
 
-  // Hidden state — no analysis running or enabled
-  if (!analysisState || analysisState.status === 'idle') {
-    return null;
-  }
+  if (!analysisState || analysisState.status === 'idle') return null;
 
-  // Analyzing state — loading shimmer
-  if (analysisState.status === 'analyzing') {
-    return (
-      <div className="border-b bg-muted/30 transition-all duration-200 ease-out">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-2">
-          <BrainCircuit className="h-4 w-4 text-muted-foreground animate-pulse" />
-          <span className="text-xs text-muted-foreground animate-pulse">Analyzing message...</span>
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />
-        </div>
-      </div>
-    );
-  }
+  const { status, thinking, content, data, error } = analysisState;
+  const isStreaming = status === 'streaming';
+  const isComplete = status === 'complete';
+  const isFailed = status === 'failed';
+  const hasStreamText = !!(thinking || content);
 
-  // Complete state
-  const data = analysisState.data;
-  if (!data) return null;
-
-  const confidenceColor = data.confidence >= 80
-    ? 'text-green-500'
-    : data.confidence >= 50
-      ? 'text-yellow-500'
-      : 'text-red-500';
-
-  const moduleList = (data.modules ?? []).filter(m => m !== 'none').join(', ') || 'none';
-  const intentSummary = data.primary_intent ?? 'Unknown';
-  const secondaryText = data.secondary_intents?.length > 0
-    ? ` + ${data.secondary_intents.join(', ')}`
-    : '';
-  const analysisTimeStr = data.analysis_time_ms != null
-    ? `${(data.analysis_time_ms / 1000).toFixed(1)}s`
-    : '';
-
-  // Collapsed state — single thin bar
+  // --- Collapsed bar ---
   if (isCollapsed) {
+    const summary = isComplete && data
+      ? `${data.primary_intent || 'Analyzed'} \u00b7 ${(data.modules || []).filter(m => m !== 'none').join(', ') || 'none'} \u00b7 ${data.confidence ?? 0}%`
+      : isFailed ? `Failed: ${error || 'Unknown'}` : 'Analyzing...';
+
     return (
-      <div className="border-b bg-muted/30 transition-all duration-200 ease-out">
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className="max-w-4xl mx-auto px-4 py-1.5 flex items-center gap-2 w-full text-left hover:bg-muted/50 transition-colors"
-        >
-          <BrainCircuit className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="text-xs text-muted-foreground truncate">
-            {intentSummary}{secondaryText} &middot; {moduleList} &middot; <span className={confidenceColor}>{data.confidence}%</span>
-          </span>
+      <div className="border-b bg-muted/30">
+        <button onClick={() => setIsCollapsed(false)} className="max-w-4xl mx-auto px-4 py-1.5 flex items-center gap-2 w-full text-left hover:bg-muted/50 transition-colors">
+          <BrainCircuit className={cn('h-3.5 w-3.5 shrink-0', isStreaming && 'animate-pulse text-violet-500', isComplete && 'text-green-500', isFailed && 'text-red-500')} />
+          <span className="text-xs text-muted-foreground truncate">{summary}</span>
+          {isStreaming && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto shrink-0" />}
           <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
         </button>
       </div>
     );
   }
 
-  // Expanded state
-  const memoryCount = data.memories_found ?? 0;
-  const toolsLoaded = data.tools_loaded ?? 0;
-  const toolsTotal = data.tools_total ?? 0;
-  const preFetchedKeys = data.pre_fetched_keys ?? [];
-
+  // --- Expanded panel ---
   return (
-    <div className="border-b bg-muted/30 transition-all duration-200 ease-out">
-      <div className="max-w-4xl mx-auto px-4 py-2 space-y-1">
+    <div className="border-b bg-muted/30 transition-all duration-200">
+      <div className="max-w-4xl mx-auto px-4 py-2 space-y-2">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BrainCircuit className="h-4 w-4 text-muted-foreground" />
+            <BrainCircuit className={cn('h-4 w-4', isStreaming && 'animate-pulse text-violet-500', isComplete && 'text-green-500', isFailed && 'text-red-500')} />
             <span className="text-xs font-medium text-muted-foreground">
-              Analysis{analysisTimeStr ? ` (${analysisTimeStr})` : ''}
+              {isStreaming ? 'Analyzing...' : isComplete ? `Analysis (${((data?.analysis_time_ms || 0) / 1000).toFixed(1)}s)` : 'Analysis Failed'}
             </span>
+            {isStreaming && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+            {isComplete && <Check className="h-3 w-3 text-green-500" />}
+            {isFailed && <AlertCircle className="h-3 w-3 text-red-500" />}
           </div>
-          <button onClick={() => setIsCollapsed(true)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Collapse <ChevronUp className="h-3 w-3" />
-          </button>
+          <div className="flex items-center gap-1">
+            {hasStreamText && isComplete && (
+              <button onClick={() => setShowRaw(!showRaw)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted">
+                {showRaw ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                {showRaw ? 'Hide' : 'Raw'}
+              </button>
+            )}
+            <button onClick={() => setIsCollapsed(true)} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted">
+              <ChevronUp className="h-3 w-3" />
+            </button>
+          </div>
         </div>
 
-        {/* Content grid */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-          <div>
-            <span className="text-muted-foreground">Intent: </span>
-            <span>{intentSummary}{secondaryText}</span>
+        {/* Streaming view — live thinking + content */}
+        {(isStreaming || showRaw) && hasStreamText && (
+          <div
+            ref={streamRef}
+            className="bg-black/5 dark:bg-white/5 rounded-md p-2 max-h-36 overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1"
+          >
+            {thinking && (
+              <div className="text-muted-foreground/70 italic whitespace-pre-wrap">{thinking}</div>
+            )}
+            {content && (
+              <div className="text-foreground/80 whitespace-pre-wrap">{content}</div>
+            )}
+            {isStreaming && <span className="inline-block w-1.5 h-3.5 bg-violet-500 animate-pulse rounded-sm" />}
           </div>
-          <div>
-            <span className="text-muted-foreground">Confidence: </span>
-            <span className={cn('font-medium', confidenceColor)}>{data.confidence}%</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Modules: </span>
-            <span>{moduleList}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Tools: </span>
-            <span>{toolsLoaded}/{toolsTotal} selected</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-muted-foreground">Context: </span>
-            <span>
-              {memoryCount} memories
-              {preFetchedKeys.length > 0 ? ` · ${preFetchedKeys.join(', ')} loaded` : ''}
-            </span>
-          </div>
-          {data.ambiguity && (
-            <div className="col-span-2">
-              <span className="text-amber-500 dark:text-amber-400">Ambiguity: </span>
-              <span className="text-amber-600 dark:text-amber-300">{data.ambiguity}</span>
+        )}
+
+        {/* Failed state */}
+        {isFailed && (
+          <p className="text-xs text-red-500/80">{error || 'Analysis failed. Falling back to standard flow.'}</p>
+        )}
+
+        {/* Complete state — structured results grid */}
+        {isComplete && data && !data.failed && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-0.5 text-xs">
+            <div>
+              <span className="text-muted-foreground">Intent: </span>
+              <span>{data.primary_intent || 'Unknown'}{data.secondary_intents?.length > 0 ? ` + ${data.secondary_intents.join(', ')}` : ''}</span>
             </div>
-          )}
-        </div>
+            <div>
+              <span className="text-muted-foreground">Confidence: </span>
+              <span className={cn('font-medium', (data.confidence ?? 0) >= 80 ? 'text-green-500' : (data.confidence ?? 0) >= 50 ? 'text-yellow-500' : 'text-red-500')}>{data.confidence ?? 0}%</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Modules: </span>
+              <span>{(data.modules ?? []).filter(m => m !== 'none').join(', ') || 'none'}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Tools: </span>
+              <span>{data.tools_loaded ?? 0}/{data.tools_total ?? 0}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Memories: </span>
+              <span>{data.memories_found ?? 0}</span>
+            </div>
+            {(data.pre_fetched_keys ?? []).length > 0 && (
+              <div>
+                <span className="text-muted-foreground">Pre-fetched: </span>
+                <span>{data.pre_fetched_keys.join(', ')}</span>
+              </div>
+            )}
+            {data.ambiguity && (
+              <div className="col-span-full">
+                <span className="text-amber-500">{data.ambiguity}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

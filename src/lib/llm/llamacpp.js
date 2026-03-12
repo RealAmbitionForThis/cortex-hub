@@ -76,7 +76,15 @@ export async function chatCompletion({ model, messages, tools, stream = false, o
   });
 
   if (!res.ok) {
-    throw new Error(`llama.cpp chat error: ${res.status}`);
+    // Read the actual error body from llama-server so we know what went wrong
+    let detail = '';
+    try {
+      const errBody = await res.json();
+      detail = errBody?.error?.message || errBody?.error || JSON.stringify(errBody);
+    } catch {
+      try { detail = await res.text(); } catch { /* */ }
+    }
+    throw new Error(`llama.cpp chat error ${res.status}: ${detail}`);
   }
 
   return res;

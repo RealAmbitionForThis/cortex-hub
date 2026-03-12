@@ -60,9 +60,13 @@ export async function* parseOpenAIStream(response) {
           finalChunk.message = {
             tool_calls: toolCallAccum.map((tc) => ({
               id: tc.id,
+              type: 'function',
               function: {
                 name: tc.name,
+                // Keep arguments as a parsed object for tool execution,
+                // but also store the raw string for sending back to llama-server
                 arguments: safeParseJSON(tc.arguments),
+                _rawArguments: tc.arguments,
               },
             })),
           };
@@ -122,9 +126,11 @@ export async function* parseOpenAIStream(response) {
     finalChunk.message = {
       tool_calls: toolCallAccum.map((tc) => ({
         id: tc.id,
+        type: 'function',
         function: {
           name: tc.name,
           arguments: safeParseJSON(tc.arguments),
+          _rawArguments: tc.arguments,
         },
       })),
     };

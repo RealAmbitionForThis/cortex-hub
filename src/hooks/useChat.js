@@ -11,7 +11,7 @@ export function useChat() {
   const [conversationId, setConversationId] = useState(null);
   const conversationIdRef = useRef(null);
   const [conversationMeta, setConversationMeta] = useState(null);
-  const [analysisState, setAnalysisState] = useState({ status: 'idle', data: null });
+  const [analysisState, setAnalysisState] = useState({ status: 'idle', thinking: '', content: '', data: null, error: null });
   const abortRef = useRef(null);
   const stuckTimeoutRef = useRef(null);
   const stuckWarningShownRef = useRef(false);
@@ -63,11 +63,9 @@ export function useChat() {
   const sendMessage = useCallback(async ({ message, model, reasoningLevel, enabledTools, attachments, samplingParams, projectId, systemPromptOverride, extraAnalyze }) => {
     setStreaming(true);
 
-    // Set analysis state to analyzing if extra-analyze is enabled
+    // Reset analysis state for this new message
     if (extraAnalyze) {
-      setAnalysisState({ status: 'analyzing', data: null });
-    } else {
-      setAnalysisState({ status: 'idle', data: null });
+      setAnalysisState({ status: 'idle', thinking: '', content: '', data: null, error: null });
     }
 
     const userMsg = { id: crypto.randomUUID(), role: 'user', content: message };
@@ -156,9 +154,18 @@ export function useChat() {
               );
               break;
             }
-            if (event.type === 'analysis_result') {
-              // Update the analyzer panel with results
-              setAnalysisState({ status: 'complete', data: event.data });
+            if (event.type === 'analysis_start') {
+              setAnalysisState({ status: 'streaming', thinking: '', content: '', data: null, error: null });
+            } else if (event.type === 'analysis_thinking') {
+              setAnalysisState(prev => ({ ...prev, thinking: prev.thinking + event.content }));
+            } else if (event.type === 'analysis_content') {
+              setAnalysisState(prev => ({ ...prev, content: prev.content + event.content }));
+            } else if (event.type === 'analysis_result') {
+              if (event.data?.failed) {
+                setAnalysisState(prev => ({ ...prev, status: 'failed', error: event.data.error || 'Analysis failed' }));
+              } else {
+                setAnalysisState(prev => ({ ...prev, status: 'complete', data: event.data }));
+              }
             } else if (event.type === 'debug') {
               debugInfo = { systemPrompt: event.systemPrompt, messagesCount: event.messagesCount, projectPrompt: event.projectPrompt, model: event.model };
             } else if (event.type === 'debug_tool_round') {
@@ -197,6 +204,8 @@ export function useChat() {
               setMessages((prev) =>
                 prev.map((m) => m.id === assistantId ? { ...m, streaming: false, tokenStats: event.tokenStats || null, debugInfo, toolRounds: toolRounds.length > 0 ? toolRounds : undefined } : m)
               );
+              // Safety net: if analysis is still stuck on 'streaming' when chat is done, mark failed
+              setAnalysisState(prev => prev.status === 'streaming' ? { ...prev, status: 'failed', error: 'Analysis did not complete' } : prev);
             }
           } catch {
             // Skip malformed JSON
@@ -207,6 +216,8 @@ export function useChat() {
       setMessages((prev) =>
         prev.map((m) => m.streaming ? { ...m, streaming: false } : m)
       );
+      // Ensure analyzer isn't stuck if stream ended without done event
+      setAnalysisState(prev => prev.status === 'streaming' ? { ...prev, status: 'failed', error: 'Stream ended unexpectedly' } : prev);
     } catch (err) {
       if (err.name === 'AbortError') {
         // User cancelled — mark current streaming message as done
@@ -220,10 +231,8 @@ export function useChat() {
         setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: backendHint, error: true }]);
         toast.error(`LLM backend error: ${detail}`);
       }
-      // Reset analysis state on error
-      if (extraAnalyze) {
-        setAnalysisState({ status: 'idle', data: null });
-      }
+      // Mark analysis as failed on error
+      setAnalysisState(prev => prev.status === 'streaming' ? { ...prev, status: 'failed', error: 'Connection error' } : prev);
     } finally {
       clearStuckTimer();
       abortRef.current = null;
@@ -300,7 +309,7 @@ export function useChat() {
     setMessages([]);
     setConversationId(null);
     setConversationMeta(null);
-    setAnalysisState({ status: 'idle', data: null });
+    setAnalysisState({ status: 'idle', thinking: '', content: '', data: null, error: null });
   }, []);
 
   return {

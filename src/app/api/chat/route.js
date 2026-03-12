@@ -43,11 +43,21 @@ export async function POST(request) {
       }
     } catch { /* use default */ }
 
-    // --- Pre-Analysis Pass (when extra_analyze is enabled) ---
+    // Create SSE stream early so analysis events stream to client in real-time
+    const { stream, send, close, error: streamError } = createSSEStream();
+    const ollamaOptions = samplingParams && typeof samplingParams === 'object' ? { ...samplingParams } : {};
+
+    // Run entire pipeline (analysis → context → chat) in background
+    // so the Response returns immediately and SSE events stream in real-time
+    (async () => {
+      try {
+
+    // --- Streaming Pre-Analysis Pass ---
     let enrichedContext = null;
     let analysisResult = null;
 
     if (extraAnalyze) {
+      send({ type: 'analysis_start' });
       try {
         const analysisStart = Date.now();
 
@@ -101,26 +111,28 @@ export async function POST(request) {
           analysisMessages.push({ role: 'user', content: message });
         }
 
-        // Non-streaming analysis call with low reasoning + timeout
-        const analysisResponse = await Promise.race([
-          chatCompletion({
-            model: analysisModel,
-            messages: analysisMessages,
-            stream: false,
-            options: { temperature: 0.1 },
-            think: false,
-          }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Analysis timeout')), analysisTimeoutMs)),
-        ]);
+        // Streaming analysis call — thinking + content stream to the client in real-time
+        const analysisResponse = await chatCompletion({
+          model: analysisModel,
+          messages: analysisMessages,
+          stream: true,
+          options: { temperature: 0.1 },
+          // Don't disable thinking — stream the model's reasoning to the analyzer panel
+        });
 
-        // Parse the non-streaming response — format differs between Ollama and llama-server
+        let analysisThinking = '';
         let rawAnalysisText = '';
-        if (analysisResponse && typeof analysisResponse.json === 'function') {
-          const jsonData = await analysisResponse.json();
-          // Ollama returns { message: { content } }, llama-server returns { choices: [{ message: { content } }] }
-          rawAnalysisText = jsonData?.message?.content
-            ?? jsonData?.choices?.[0]?.message?.content
-            ?? '';
+
+        for await (const chunk of parseStream(analysisResponse, getBackend())) {
+          if (chunk.message?.thinking) {
+            analysisThinking += chunk.message.thinking;
+            send({ type: 'analysis_thinking', content: chunk.message.thinking });
+          }
+          if (chunk.message?.content) {
+            rawAnalysisText += chunk.message.content;
+            send({ type: 'analysis_content', content: chunk.message.content });
+          }
+          if (chunk.done) break;
         }
 
         const analysisTimeMsElapsed = Date.now() - analysisStart;
@@ -136,11 +148,15 @@ export async function POST(request) {
             tools_total: getToolDefinitions().length,
             memories_found: enrichedContext.memories.length,
             pre_fetched_keys: Object.keys(enrichedContext.preFetchedData),
+            thinking: analysisThinking,
+            rawText: rawAnalysisText,
           };
         }
+        send({ type: 'analysis_result', data: analysisResult || { failed: true, error: 'Failed to parse analysis response' } });
       } catch (err) {
         console.error('[analysis] Pre-analysis failed, falling back to standard flow:', err?.message ?? err);
-        // Fall through — enrichedContext stays null, standard flow continues
+        analysisResult = { failed: true, error: err?.message ?? 'Analysis failed', modules: [], confidence: 0 };
+        send({ type: 'analysis_result', data: analysisResult });
       }
     }
 
@@ -194,21 +210,16 @@ export async function POST(request) {
     ];
     const mainModel = getMainModel(db, model);
 
-    const { stream, send, close, error: streamError } = createSSEStream();
-
-    // samplingParams is already in Ollama option key format (temperature, top_p, num_ctx, etc.)
-    // built by buildOllamaOptions() on the frontend — pass through as-is
-    const ollamaOptions = samplingParams && typeof samplingParams === 'object' ? { ...samplingParams } : {};
-
-    // Send analysis result to frontend BEFORE main response begins
-    if (analysisResult) {
-      send({ type: 'analysis_result', data: analysisResult });
-    }
-
     // Send debug info so the frontend can show exact inputs
     send({ type: 'debug', systemPrompt, messagesCount: messages.length, projectPrompt: projectPrompt || null, model: mainModel });
 
-    streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions });
+    await streamChat({ db, convId, mainModel, messages, tools, send, close, streamError, reasoningLevel, ollamaOptions });
+
+      } catch (pipelineErr) {
+        console.error('[pipeline] Fatal error:', pipelineErr);
+        streamError(pipelineErr);
+      }
+    })();
 
     return new Response(stream, {
       headers: {
@@ -326,9 +337,23 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
         saveAssistantMessage(db, convId, currentContent, JSON.stringify(currentToolCalls), reasoningLevel);
       }
 
+      // Format tool_calls for the OpenAI API (llama-server):
+      // - arguments must be a JSON string, not a parsed object
+      // - each tool_call must have type: 'function'
+      const formattedToolCalls = currentToolCalls.map(tc => ({
+        id: tc.id || `call_${uuidv4().slice(0, 8)}`,
+        type: 'function',
+        function: {
+          name: tc.function?.name,
+          arguments: typeof tc.function?.arguments === 'string'
+            ? tc.function.arguments
+            : JSON.stringify(tc.function?.arguments || {}),
+        },
+      }));
+
       currentMessages = [
         ...currentMessages,
-        { role: 'assistant', content: currentContent, tool_calls: currentToolCalls },
+        { role: 'assistant', content: currentContent || null, tool_calls: formattedToolCalls },
         ...toolResults,
       ];
 
@@ -416,9 +441,20 @@ function getMessageHistory(db, convId) {
     }
     const msg = { role: row.role, content };
     // Restore tool_calls on assistant messages so the model sees its prior tool usage
+    // Normalize to OpenAI format: type='function', arguments as string
     if (row.tool_calls) {
       try {
-        msg.tool_calls = JSON.parse(row.tool_calls);
+        const parsed = JSON.parse(row.tool_calls);
+        msg.tool_calls = Array.isArray(parsed) ? parsed.map(tc => ({
+          id: tc.id || 'call_0',
+          type: 'function',
+          function: {
+            name: tc.function?.name,
+            arguments: typeof tc.function?.arguments === 'string'
+              ? tc.function.arguments
+              : JSON.stringify(tc.function?.arguments || {}),
+          },
+        })) : parsed;
       } catch { /* malformed tool_calls JSON */ }
     }
     return msg;
