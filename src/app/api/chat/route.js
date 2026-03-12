@@ -523,7 +523,8 @@ export async function PUT(request) {
 export async function DELETE(request) {
   try {
     const db = getDb();
-    const { messageId } = await request.json();
+    const url = new URL(request.url);
+    const messageId = url.searchParams.get('messageId');
 
     const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
     if (!msg) return notFound('Message not found');

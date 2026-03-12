@@ -3,6 +3,7 @@ export class SSETransport {
     this.url = url;
     this.eventSource = null;
     this.messageHandlers = [];
+    this.errorHandlers = [];
     this.connected = false;
     this.abortController = null;
   }
@@ -47,6 +48,9 @@ export class SSETransport {
         } catch (e) {
           if (e.name !== 'AbortError') {
             console.error('[mcp/transport] SSE stream error:', e.message);
+            for (const handler of self.errorHandlers) {
+              try { handler(e); } catch { /* prevent handler errors from propagating */ }
+            }
           }
         } finally {
           self.connected = false;
@@ -60,6 +64,10 @@ export class SSETransport {
 
   onMessage(handler) {
     this.messageHandlers.push(handler);
+  }
+
+  onError(handler) {
+    this.errorHandlers.push(handler);
   }
 
   async send(message) {
