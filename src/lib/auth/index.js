@@ -41,14 +41,20 @@ export async function verifyToken(token) {
   }
 }
 
+let _cachedHash = null;
+
 export async function getPasswordHash() {
+  if (_cachedHash) return _cachedHash;
+
   const password = process.env.CORTEX_PASSWORD;
   if (!password) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('CORTEX_PASSWORD must be set in production');
     }
     console.warn('[auth] CORTEX_PASSWORD not set — using insecure dev default');
-    return hashPassword('changeme');
+    _cachedHash = await hashPassword('changeme');
+  } else {
+    _cachedHash = await hashPassword(password);
   }
-  return hashPassword(password);
+  return _cachedHash;
 }

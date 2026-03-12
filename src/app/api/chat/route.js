@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { chatCompletion, getBackend } from '@/lib/llm/provider';
 import { parseStream, createSSEStream } from '@/lib/llm/streaming';
 import { buildSystemPrompt } from '@/lib/llm/prompts';
-import { retrieveRelevantMemories } from '@/lib/memory/retrieval';
+import { retrieveRelevantMemories, retrieveMemoriesSeparated } from '@/lib/memory/retrieval';
 import { getToolDefinitions, executeTool } from '@/lib/tools/registry';
 import { buildAnalysisPrompt } from '@/lib/prompts/analysis-prompt';
 import { processAnalysis, getAvailableModules } from '@/lib/analysis/process-analysis';
@@ -162,6 +162,7 @@ export async function POST(request) {
 
     // --- Standard flow (with or without enriched context) ---
     let memories;
+    let clusterMemories = [];
     let tools;
 
     if (enrichedContext) {
@@ -169,9 +170,12 @@ export async function POST(request) {
       memories = enrichedContext.memories;
       tools = enrichedContext.filteredTools;
     } else {
-      // Standard: retrieve all memories (including active cluster memories) and all tools
+      // Standard: retrieve global and cluster memories separately so the
+      // cluster memories reach their dedicated prompt section
       const activeClusterIds = activeClusters.map(c => c.id);
-      memories = await retrieveRelevantMemories({ query: message, clusterIds: activeClusterIds });
+      const separated = await retrieveMemoriesSeparated({ query: message, clusterIds: activeClusterIds });
+      memories = separated.memories;
+      clusterMemories = separated.clusterMemories;
       tools = getToolDefinitions();
     }
 
@@ -197,6 +201,7 @@ export async function POST(request) {
       reasoningLevel: reasoningLevel || 'medium',
       memories,
       clusters: activeClusters,
+      clusterMemories,
       tools,
       projectPrompt,
       chatPromptOverride: conv?.system_prompt_override || null,
@@ -323,14 +328,19 @@ async function handleToolCalls({ db, convId, mainModel, messages, toolCalls, ful
       for (const tc of currentToolCalls) {
         const name = tc.function?.name;
         const args = tc.function?.arguments || {};
-        send({ type: 'tool_call', name, arguments: args });
+        const callId = tc.id || `call_${uuidv4().slice(0, 8)}`;
+        send({ type: 'tool_call', name, arguments: args, tool_call_id: callId });
 
         const result = await executeTool(name, args);
-        send({ type: 'tool_result', name, result });
-        const toolMsg = { role: 'tool', content: JSON.stringify(result) };
-        // Include tool_call_id if the model provided one, so the model can associate results with calls
-        if (tc.id) toolMsg.tool_call_id = tc.id;
+        send({ type: 'tool_result', name, result, tool_call_id: callId });
+        const toolContent = JSON.stringify(result);
+        const toolMsg = { role: 'tool', content: toolContent, tool_call_id: callId };
         toolResults.push(toolMsg);
+
+        // Persist tool result to DB so resumed conversations have complete message sequences
+        db.prepare('INSERT INTO messages (id, conversation_id, role, content, tool_calls, created_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'))').run(
+          uuidv4(), convId, 'tool', toolContent, JSON.stringify({ tool_call_id: callId, tool_name: name })
+        );
       }
 
       if (currentContent) {
@@ -430,9 +440,22 @@ function saveAssistantMessage(db, convId, content, toolCalls, reasoningLevel, to
 }
 
 function getMessageHistory(db, convId) {
-  const rows = db.prepare('SELECT role, content, tool_calls FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 50').all(convId);
+  const rows = db.prepare('SELECT role, content, tool_calls FROM messages WHERE conversation_id = ? ORDER BY created_at ASC, rowid ASC LIMIT 50').all(convId);
   return rows.map(row => {
     let content = row.content || '';
+
+    // For tool-role messages, reconstruct the tool result format for the model
+    if (row.role === 'tool') {
+      const msg = { role: 'tool', content };
+      if (row.tool_calls) {
+        try {
+          const meta = JSON.parse(row.tool_calls);
+          if (meta.tool_call_id) msg.tool_call_id = meta.tool_call_id;
+        } catch { /* ignore */ }
+      }
+      return msg;
+    }
+
     // Strip <think>...</think> blocks from assistant history.
     // Qwen docs: "historical model output should only include the final output part"
     // Sending thinking tokens back wastes context and can confuse the model.
@@ -442,7 +465,7 @@ function getMessageHistory(db, convId) {
     const msg = { role: row.role, content };
     // Restore tool_calls on assistant messages so the model sees its prior tool usage
     // Normalize to OpenAI format: type='function', arguments as string
-    if (row.tool_calls) {
+    if (row.role === 'assistant' && row.tool_calls) {
       try {
         const parsed = JSON.parse(row.tool_calls);
         msg.tool_calls = Array.isArray(parsed) ? parsed.map(tc => ({
@@ -482,7 +505,9 @@ export async function PUT(request) {
     if (!msg) return notFound('Message not found');
 
     db.prepare('UPDATE messages SET original_content = content, content = ?, edited = 1, version = version + 1 WHERE id = ?').run(newContent, messageId);
-    db.prepare('DELETE FROM messages WHERE conversation_id = ? AND created_at > ?').run(msg.conversation_id, msg.created_at);
+    // Delete all subsequent messages. Use rowid to avoid second-precision collisions
+    // where multiple messages share the same created_at timestamp.
+    db.prepare('DELETE FROM messages WHERE conversation_id = ? AND rowid > (SELECT rowid FROM messages WHERE id = ?)').run(msg.conversation_id, messageId);
 
     return success();
   } catch (err) {
@@ -498,8 +523,9 @@ export async function DELETE(request) {
     const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
     if (!msg) return notFound('Message not found');
 
-    db.prepare('DELETE FROM messages WHERE id = ?').run(messageId);
-    db.prepare('DELETE FROM messages WHERE conversation_id = ? AND created_at > ?').run(msg.conversation_id, msg.created_at);
+    // Delete this message and all subsequent messages. Use rowid to avoid
+    // second-precision collisions where messages share the same created_at.
+    db.prepare('DELETE FROM messages WHERE conversation_id = ? AND rowid >= (SELECT rowid FROM messages WHERE id = ?)').run(msg.conversation_id, messageId);
 
     return success();
   } catch (err) {

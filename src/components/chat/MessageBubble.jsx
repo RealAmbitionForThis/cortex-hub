@@ -7,10 +7,10 @@ import { ToolCallDisplay } from './ToolCallDisplay';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import { DebugPanel } from './DebugPanel';
 
-export function MessageBubble({ message, onEdit }) {
+export function MessageBubble({ message, onEdit, onDelete, onRegenerate }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [copied, setCopied] = useState(false);
@@ -89,6 +89,33 @@ export function MessageBubble({ message, onEdit }) {
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
+            {isUser && onEdit && (
+              <button
+                onClick={() => setEditing(true)}
+                className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary-foreground/20"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(message.id)}
+                className={cn(
+                  'p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity',
+                  isUser ? 'hover:bg-primary-foreground/20' : 'hover:bg-accent'
+                )}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {!isUser && onRegenerate && (
+              <button
+                onClick={() => onRegenerate(message.id)}
+                className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         )}
       </div>

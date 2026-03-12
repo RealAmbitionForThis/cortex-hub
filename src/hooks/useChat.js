@@ -184,10 +184,13 @@ export function useChat() {
               );
               if (event.conversationId) setConversationId(event.conversationId);
             } else if (event.type === 'tool_call') {
-              setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'tool', tool_name: event.name, tool_args: event.arguments, content: 'Calling tool...' }]);
+              setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'tool', tool_name: event.name, tool_call_id: event.tool_call_id, tool_args: event.arguments, content: 'Calling tool...' }]);
             } else if (event.type === 'tool_result') {
               setMessages((prev) => {
-                const idx = prev.findLastIndex((m) => m.role === 'tool' && m.tool_name === event.name);
+                // Match by tool_call_id when available, falling back to name for backwards compat
+                const idx = event.tool_call_id
+                  ? prev.findLastIndex((m) => m.role === 'tool' && m.tool_call_id === event.tool_call_id)
+                  : prev.findLastIndex((m) => m.role === 'tool' && m.tool_name === event.name);
                 if (idx >= 0) {
                   const updated = [...prev];
                   updated[idx] = { ...updated[idx], content: JSON.stringify(event.result), tool_result: event.result };
