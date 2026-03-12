@@ -46,8 +46,14 @@ export function getSpendingByCategory(period) {
 }
 
 export function setBudget({ category, monthly_limit }) {
-  const id = uuidv4();
-  getDb().prepare('INSERT OR REPLACE INTO budgets (id, category, monthly_limit, created_at) VALUES (?, ?, ?, datetime(\'now\'))').run(id, category, monthly_limit);
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM budgets WHERE category = ?').get(category);
+  if (existing) {
+    db.prepare('UPDATE budgets SET monthly_limit = ?, created_at = datetime(\'now\') WHERE id = ?').run(monthly_limit, existing.id);
+  } else {
+    const id = uuidv4();
+    db.prepare('INSERT INTO budgets (id, category, monthly_limit, created_at) VALUES (?, ?, ?, datetime(\'now\'))').run(id, category, monthly_limit);
+  }
 }
 
 export function getBudgets() {
