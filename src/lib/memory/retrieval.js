@@ -17,6 +17,26 @@ export async function retrieveRelevantMemories({ query, module, limit, clusterId
   return rankBySimilarity(allMemories, queryVector, count);
 }
 
+export async function retrieveMemoriesSeparated({ query, module, limit, clusterIds = [] }) {
+  const count = limit || DEFAULT_MEMORY_RETRIEVAL_COUNT;
+  const queryVector = await textToVector(query);
+
+  const globalMemories = getGlobalMemories(module);
+  const clusterMems = getClusterMemories(clusterIds);
+
+  if (!queryVector) {
+    return {
+      memories: globalMemories.slice(0, count),
+      clusterMemories: clusterMems,
+    };
+  }
+
+  return {
+    memories: rankBySimilarity(globalMemories, queryVector, count),
+    clusterMemories: clusterMems,
+  };
+}
+
 function getGlobalMemories(module) {
   const db = getDb();
   let query = 'SELECT * FROM memories WHERE confidence > 0.3';
@@ -27,7 +47,9 @@ function getGlobalMemories(module) {
     params.push(module);
   }
 
-  query += ' ORDER BY updated_at DESC LIMIT 100';
+  // Load all candidate memories for similarity ranking (no arbitrary LIMIT).
+  // For typical usage (<10K rows) this is fast with better-sqlite3.
+  query += ' ORDER BY updated_at DESC';
   return db.prepare(query).all(...params);
 }
 

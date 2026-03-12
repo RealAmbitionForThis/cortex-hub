@@ -85,7 +85,9 @@ export function markBillPaid(billId) {
   if (!bill) return null;
 
   const nextDue = calculateNextDue(bill.frequency, bill.due_day);
-  db.prepare('UPDATE bills SET paid_this_cycle = 1, last_paid = date(\'now\'), next_due = ? WHERE id = ?').run(nextDue, billId);
+  // Mark as paid for this cycle, record payment date, advance next_due,
+  // and reset paid_this_cycle to 0 so the next cycle starts unpaid
+  db.prepare('UPDATE bills SET paid_this_cycle = 0, last_paid = date(\'now\'), next_due = ? WHERE id = ?').run(nextDue, billId);
   return { success: true, next_due: nextDue };
 }
 
@@ -251,6 +253,22 @@ export function getWishlistBudgetInsight() {
   };
 }
 
+function daysInMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+function advanceAndClamp(date, frequency, dueDay) {
+  // Set day to 1 first to avoid month overflow when advancing
+  date.setDate(1);
+  switch (frequency) {
+    case 'monthly': date.setMonth(date.getMonth() + 1); break;
+    case 'quarterly': date.setMonth(date.getMonth() + 3); break;
+    case 'yearly': date.setFullYear(date.getFullYear() + 1); break;
+  }
+  // Clamp the day to the number of days in the target month
+  date.setDate(Math.min(dueDay, daysInMonth(date)));
+}
+
 function calculateNextDue(frequency, dueDay) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -258,15 +276,11 @@ function calculateNextDue(frequency, dueDay) {
   if (dueDay && (frequency === 'monthly' || frequency === 'quarterly' || frequency === 'yearly')) {
     // For frequencies with a specific due day, find the next occurrence of that day
     const next = new Date(today);
-    next.setDate(dueDay);
+    // Clamp due day to this month's length
+    next.setDate(Math.min(dueDay, daysInMonth(next)));
     // If the due day this month/period is already past, advance to next period
     if (next <= today) {
-      switch (frequency) {
-        case 'monthly': next.setMonth(next.getMonth() + 1); break;
-        case 'quarterly': next.setMonth(next.getMonth() + 3); break;
-        case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
-      }
-      next.setDate(dueDay);
+      advanceAndClamp(next, frequency, dueDay);
     }
     return next.toISOString().split('T')[0];
   }
@@ -274,10 +288,10 @@ function calculateNextDue(frequency, dueDay) {
   // For weekly/biweekly or no specific due day, just offset from today
   const next = new Date(today);
   switch (frequency) {
-    case 'monthly': next.setMonth(next.getMonth() + 1); break;
+    case 'monthly': next.setDate(1); next.setMonth(next.getMonth() + 1); break;
     case 'weekly': next.setDate(next.getDate() + 7); break;
     case 'biweekly': next.setDate(next.getDate() + 14); break;
-    case 'quarterly': next.setMonth(next.getMonth() + 3); break;
+    case 'quarterly': next.setDate(1); next.setMonth(next.getMonth() + 3); break;
     case 'yearly': next.setFullYear(next.getFullYear() + 1); break;
     default: break;
   }
