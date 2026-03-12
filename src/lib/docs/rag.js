@@ -29,19 +29,18 @@ export async function searchDocuments(query, limit = 5) {
 
   try {
     const queryEmbedding = await generateEmbedding(query);
-    const chunks = db.prepare('SELECT * FROM document_chunks WHERE embedding IS NOT NULL LIMIT 500').all();
+    const chunks = db.prepare(
+      'SELECT id, document_id, chunk_index, content, embedding FROM document_chunks WHERE embedding IS NOT NULL LIMIT 500'
+    ).all();
 
     const scored = chunks.map(chunk => ({
-      ...chunk,
+      document_id: chunk.document_id,
+      content: chunk.content,
+      chunk_index: chunk.chunk_index,
       score: cosineSimilarity(queryEmbedding, bufferToVector(chunk.embedding)),
     })).sort((a, b) => b.score - a.score).slice(0, limit);
 
-    return scored.map(c => ({
-      document_id: c.document_id,
-      content: c.content,
-      score: c.score,
-      chunk_index: c.chunk_index,
-    }));
+    return scored;
   } catch {
     return [];
   }

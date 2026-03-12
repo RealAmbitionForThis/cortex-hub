@@ -261,10 +261,8 @@ export function useChat() {
 
   const deleteMessage = useCallback(async (messageId) => {
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(`/api/chat?messageId=${encodeURIComponent(messageId)}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId }),
       });
       if (res.ok && conversationIdRef.current) {
         await loadConversation(conversationIdRef.current);
