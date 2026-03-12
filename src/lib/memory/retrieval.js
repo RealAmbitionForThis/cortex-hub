@@ -47,9 +47,7 @@ function getGlobalMemories(module) {
     params.push(module);
   }
 
-  // Load all candidate memories for similarity ranking (no arbitrary LIMIT).
-  // For typical usage (<10K rows) this is fast with better-sqlite3.
-  query += ' ORDER BY updated_at DESC';
+  query += ' ORDER BY updated_at DESC LIMIT 500';
   return db.prepare(query).all(...params);
 }
 

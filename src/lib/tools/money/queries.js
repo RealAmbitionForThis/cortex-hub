@@ -17,7 +17,7 @@ export function getTransactions({ period, category, limit } = {}) {
   const params = [];
 
   if (period) {
-    const { start, end } = getMonthRange(period instanceof Date ? period : new Date());
+    const { start, end } = getMonthRange(period instanceof Date ? period : (period ? new Date(period) : undefined));
     query += ' AND date >= ? AND date <= ?';
     params.push(start, end);
   }

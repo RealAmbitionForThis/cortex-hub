@@ -29,7 +29,7 @@ export async function searchDocuments(query, limit = 5) {
 
   try {
     const queryEmbedding = await generateEmbedding(query);
-    const chunks = db.prepare('SELECT * FROM document_chunks WHERE embedding IS NOT NULL').all();
+    const chunks = db.prepare('SELECT * FROM document_chunks WHERE embedding IS NOT NULL LIMIT 500').all();
 
     const scored = chunks.map(chunk => ({
       ...chunk,

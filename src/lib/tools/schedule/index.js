@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { scheduleJob, stopJob } from '@/lib/scheduler/cron';
+import cron from 'node-cron';
 
 export const scheduleTools = [
   {
@@ -17,6 +18,9 @@ export const scheduleTools = [
       required: ['name', 'cron_expression', 'action'],
     },
     handler: async ({ name, cron_expression, action, params }) => {
+      if (!cron.validate(cron_expression)) {
+        return { error: `Invalid cron expression: "${cron_expression}"` };
+      }
       const db = getDb();
       const id = uuidv4();
       db.prepare(`
